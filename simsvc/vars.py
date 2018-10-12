@@ -13,7 +13,7 @@ empty_resp = ("", HTTPStatus.NO_CONTENT)
 
 @get_vars.route('')
 def get_all_vars():
-    with db.db.transaction() as conn:
+    with db.transact() as conn:
         st = db.get_state(conn)
         vars = st.default
         return jsonify(dict(vars))
@@ -21,7 +21,7 @@ def get_all_vars():
 @get_vars.route('/<var>')
 def get_var(var):
     try:
-        with db.db.transaction() as conn:
+        with db.transact() as conn:
             st = db.get_state(conn)
             vars = st.default
             return jsonify(vars[var])
@@ -33,7 +33,7 @@ def set_all_vars():
     req = request.get_json()
     if not isinstance(req, dict):
         raise wexc.UnsupportedMediaType("Not a JSON object")
-    with db.db.transaction() as conn:
+    with db.transact("set_all_vars") as conn:
         st = db.get_state(conn)
         vars = st.default
         vars.clear()
@@ -44,7 +44,7 @@ def set_all_vars():
 def set_var(var):
     meth = request.method
     try:
-        with db.db.transaction() as conn:
+        with db.transact("set_var") as conn:
             st = db.get_state(conn)
             vars = st.default
             if meth == 'DELETE':

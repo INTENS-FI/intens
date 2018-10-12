@@ -1,18 +1,40 @@
-"""Database objects
+"""Database objects and support.
 """
 
 from enum import Enum
+import flask
+from werkzeug.utils import cached_property
 from persistent import Persistent
 import transaction
 from BTrees.OOBTree import OOBTree, difference
 from BTrees.IOBTree import IOBTree
 import ZODB
 
-db = None
+class DBFlask(flask.Flask):
+    """A Flask app with a database association.
+    """
+    @cached_property
+    def db(s):
+        """ZODB connection pool.
+        """
+        import atexit
+        #TODO config
+        z = ZODB.DB("app.fs")
+        atexit.register(z.close)
+        return z
 
-def setup_db(app):
-    global db
-    db = ZODB.DB('app.fs')
+def transact(note=None):
+    """Return a context manager encapsulating a transaction.
+
+    The database connection is obtained from flask.current_app, which must be
+    available and an instance of DBFlask.  Currently this is a thin wrapper
+    around ZODB.DB.transaction.  In particular:
+    - exiting the with block normally commits, exceptions abort.
+    - the return value of __enter__ (bound using "with transact() as conn")
+      is a database connection that can be passed to functions of this module.
+    - note is an optional transaction note, saved by ZODB.
+    """
+    return flask.current_app.db.transaction(note)
 
 class App_state(Persistent):
     """Application state.
