@@ -9,20 +9,32 @@ import db, util
 get_vars = Blueprint('get_vars', __name__)
 set_vars = Blueprint('set_vars', __name__)
 
+def _get_vars(st, vtype, job=None):
+    if vtype == 'default':
+        return st.default
+    else:
+        try:
+            j = st.jobs[job]
+        except KeyError as e:
+            raise wexc.NotFound() from e
+        if vtype == 'inputs':
+            return j.inputs
+        elif vtype == 'results':
+            return j.results
+        else:
+            raise ValueError("Invalid vtype")
 
 @get_vars.route('')
-def get_all_vars():
+def get_all_vars(vtype, job):
     with db.transact() as conn:
-        st = db.get_state(conn)
-        vars = st.default
+        vars = _get_vars(db.get_state(conn), vtype, job)
         return jsonify(dict(vars))
 
 @get_vars.route('/<var>')
-def get_var(var):
+def get_var(vtype, job, var):
     try:
         with db.transact() as conn:
-            st = db.get_state(conn)
-            vars = st.default
+            vars = _get_vars(db.get_state(conn), vtype, job)
             return jsonify(vars[var])
     except KeyError as e:
         raise wexc.NotFound() from e
