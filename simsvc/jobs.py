@@ -21,7 +21,7 @@ def get_jobs():
 def get_job(job):
     with db.transact() as conn:
         j = db.get_state(conn).jobs[job]
-        return jsonify(j.status)
+        return jsonify(j.status.name)
 
 @jobs_bp.route('', methods=['POST'])
 def post_job():
