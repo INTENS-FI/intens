@@ -5,7 +5,6 @@ from enum import Enum
 import flask
 from werkzeug.utils import cached_property
 from persistent import Persistent
-import transaction
 from BTrees.OOBTree import OOBTree, difference
 from BTrees.IOBTree import IOBTree
 import ZODB
@@ -58,9 +57,21 @@ def get_state(conn):
         st = r.app_state = App_state()
         return st
 
+class Job_status(Enum):
+    """Job states.
+    Positive values are normal, others exceptional. 
+    """
+    INVALID = 0
+    SCHEDULED = 1
+    RUNNING = 2
+    DONE = 3
+    FAILED = -1
+    CANCELED = -2
+
+
 class Job(Persistent):
     """Persistent data for a single job.  Instance attributes:
-    status	Job.Status
+    status	Job_status
     inputs	A mapping (name -> value) of inputs.  Includes
     		default values as applied.
     results	A mapping (name -> value) of results (generally empty
@@ -72,23 +83,13 @@ class Job(Persistent):
     management.  Replacement with a new value is fine as OOBTree handles
     persistence then.
     """
-    class Status(Enum):
-        """Job states.
-        Positive values are normal, others exceptional. 
-        """
-        INVALID = 0
-        SCHEDULED = 1
-        RUNNING = 2
-        DONE = 3
-        FAILED = -1
-        CANCELED = -2
         
     def __init__(s, inputs, defaults):
         """Initialise from given inputs and defaults, which are name -> value
         collections.  The job inputs are their union, with values in
         inputs having precedence over defaults.
         """
-        s.status = Status.INVALID
+        s.status = Job_status.INVALID
         s.inputs = OOBTree()
         s.inputs.update(inputs)
         s.inputs.update(difference(defaults, s.inputs))
@@ -96,6 +97,8 @@ class Job(Persistent):
         s.error = None
 
 def gen_jobid(jobs):
+    if not jobs:
+        return 1
     mk = jobs.maxKey()
     if mk > 10 * len(jobs):
         return randrange(1, mk)

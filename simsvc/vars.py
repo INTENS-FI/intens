@@ -1,15 +1,14 @@
-"""Access to inputs and results.
+"""Requests for managing inputs and results.
 """
 
 from flask import Blueprint, jsonify, request
 import werkzeug.exceptions as wexc
-import db
-from http import HTTPStatus
+
+import db, util
 
 get_vars = Blueprint('get_vars', __name__)
 set_vars = Blueprint('set_vars', __name__)
 
-empty_resp = ("", HTTPStatus.NO_CONTENT)
 
 @get_vars.route('')
 def get_all_vars():
@@ -38,7 +37,7 @@ def set_all_vars():
         vars = st.default
         vars.clear()
         vars.update(req)
-        return empty_resp
+        return util.empty_response
 
 @set_vars.route('/<var>', methods=['PUT', 'DELETE'])
 def set_var(var):
@@ -54,6 +53,6 @@ def set_var(var):
                 if val is None:
                     raise wexc.UnsupportedMediaType("Not JSON data")
                 vars[var] = val
-            return empty_resp
+            return util.empty_response
     except KeyError as e:
         raise wexc.NotFound() from e
