@@ -2,6 +2,7 @@
 """
 
 from enum import Enum
+
 import flask
 from werkzeug.utils import cached_property
 from persistent import Persistent
@@ -22,18 +23,23 @@ class DBFlask(flask.Flask):
         atexit.register(z.close)
         return z
 
-def transact(note=None):
-    """Return a context manager encapsulating a transaction.
+    def transact(s, note=None):
+        """Return a context manager encapsulating a transaction.
 
-    The database connection is obtained from flask.current_app, which must be
-    available and an instance of DBFlask.  Currently this is a thin wrapper
-    around ZODB.DB.transaction.  In particular:
-    - exiting the with block normally commits, exceptions abort.
-    - the return value of __enter__ (bound using "with transact() as conn")
-      is a database connection that can be passed to functions of this module.
-    - note is an optional transaction note, saved by ZODB.
+        Currently this is a thin wrapper around ZODB.DB.transaction.
+        In particular:
+        - exiting the with block normally commits, exceptions abort.
+        - the return value of __enter__ (bound using "with transact() as
+          conn") is a database connection that can be passed to functions
+          of this module.
+        - note is an optional transaction note, saved by ZODB.
+        """
+        return s.db.transaction(note)
+
+def transact(note=None):
+    """Run DBFlask.transact on current app.
     """
-    return flask.current_app.db.transaction(note)
+    return flask.current_app.transact(note)
 
 class App_state(Persistent):
     """Application state.
