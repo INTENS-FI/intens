@@ -72,7 +72,7 @@ class Job_status(Enum):
     RUNNING = 2
     DONE = 3
     FAILED = -1
-    CANCELED = -2
+    CANCELLED = -2
 
 
 class Job(Persistent):

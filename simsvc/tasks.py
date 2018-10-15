@@ -49,7 +49,7 @@ class TaskFlask(db.DBFlask):
                 job.results = fut.result()
                 job.status = db.Job_status.DONE
             except CancelledError:
-                job.status = db.Job_status.CANCELED
+                job.status = db.Job_status.CANCELLED
 
     def launch(s, jid, job):
         """Launch a task.
