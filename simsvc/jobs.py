@@ -46,3 +46,9 @@ def delete_job(job):
         st = db.get_state(conn)
         del st.jobs[job]
         return util.empty_response
+
+@jobs_bp.route('/<int:job>/error')
+def get_error(job):
+    with db.transact() as conn:
+        j = db.get_state(conn).jobs[job]
+        return jsonify(j.error)

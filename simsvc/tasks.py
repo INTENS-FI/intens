@@ -2,6 +2,7 @@
 """
 
 from concurrent.futures import CancelledError
+import sys, traceback as tb
 
 import flask
 from werkzeug.utils import cached_property
@@ -41,15 +42,18 @@ class TaskFlask(db.DBFlask):
         """
         assert s.tasks[jid] == fut
         assert fut.done()
-        #TODO
         del s.tasks[jid]
         with s.transact(note="task_done") as conn:
             job = db.get_state(conn).jobs[jid]
             try:
                 job.results = fut.result()
-                job.status = db.Job_status.DONE
             except CancelledError:
                 job.status = db.Job_status.CANCELLED
+            except:
+                job.status = db.Job_status.FAILED
+                job.error = "".join(tb.format_exception(*sys.exc_info()))
+            else:
+                job.status = db.Job_status.DONE
 
     def launch(s, jid, job):
         """Launch a task.
