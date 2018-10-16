@@ -6,7 +6,7 @@ Comment: This is a Multimarkdown document.
 
 ## HTTP requests
 
-### `default`
+### `default/`
 
 - GET returns list of defined defaults (names only, maybe
   `?values=true` to return also values).
@@ -17,7 +17,7 @@ Comment: This is a Multimarkdown document.
 - PUT, GET, DELETE
 - Default value for input *x*
 
-### `jobs`
+### `jobs/`
 
 - GET returns list of defined jobs (names only, `?status=true` to
   return also statuses).
@@ -30,9 +30,9 @@ Comment: This is a Multimarkdown document.
 - GET returns status
 - DELETE cancels and removes all persistent resources.
 
-##### `jobs/`*id*`/inputs`
+##### `jobs/`*id*`/inputs/`
 
-- Access to input values.  Works like `default` but read only.  Two
+- Access to input values.  Works like `default/` but read only.  Two
   possibilities:
     1. the defaults are copied here when job is created, or
     2. it is not permitted to modify defaults while jobs exist.
@@ -42,9 +42,9 @@ Comment: This is a Multimarkdown document.
 - Error details of failed simulations.  Only available if status is
   failed.
 
-##### `jobs/`*id*`/results`
+##### `jobs/`*id*`/results/`
 
-- Access to simulation results.  Works like `default` but read only.
+- Access to simulation results.  Works like `default/` but read only.
 - Only available if status is done.
 - Accessing results before simulation finishes either returns 404 (or
   maybe 409 Conflict or 503 Service unavailable) or waits.

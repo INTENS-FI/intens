@@ -9,7 +9,7 @@ import db, tasks, util
 
 jobs_bp = Blueprint('jobs_bp', __name__)
 
-@jobs_bp.route('')
+@jobs_bp.route('/')
 def get_jobs():
     wstat = request.args.get("status", type=util.boolstr)
     if wstat:
@@ -26,7 +26,7 @@ def get_job(job):
         j = db.get_state(conn).jobs[job]
         return jsonify(j.status.name)
 
-@jobs_bp.route('', methods=['POST'])
+@jobs_bp.route('/', methods=['POST'])
 def post_job():
     req = request.get_json()
     if not isinstance(req, dict):

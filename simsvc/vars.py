@@ -24,7 +24,7 @@ def _get_vars(st, vtype, job=None):
         else:
             raise ValueError("Invalid vtype")
 
-@get_vars.route('')
+@get_vars.route('/')
 def get_all_vars(vtype, job):
     with db.transact() as conn:
         vars = _get_vars(db.get_state(conn), vtype, job)
@@ -39,7 +39,7 @@ def get_var(vtype, job, var):
     except KeyError as e:
         raise wexc.NotFound() from e
 
-@set_vars.route('', methods=['PUT'])
+@set_vars.route('/', methods=['PUT'])
 def set_all_vars():
     req = request.get_json()
     if not isinstance(req, dict):
