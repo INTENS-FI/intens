@@ -102,6 +102,17 @@ class Job(Persistent):
         s.results = OOBTree()
         s.error = None
 
+    def close(s):
+        """Remove any non-database resources associated with this job.
+        On success return true: the job can now be deleted from the database
+        without resource leaks.  On failure change the job status to invalid,
+        set error to indicate reason for failure, and return false.
+
+        This should be called from a transaction that will be committed
+        whether closing succeeds or not.
+        """
+        return True
+
 def gen_jobid(jobs):
     if not jobs:
         return 1

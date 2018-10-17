@@ -80,7 +80,9 @@ class TaskFlask(db.DBFlask):
             def del_on_cancel(fut):
                 if fut.cancelled():
                     with s.transact(note="del_on_cancel") as conn:
-                        del db.get_state(conn).jobs[jid]
+                        jobs = db.get_state(conn).jobs
+                        if jobs[jid].close():
+                            del jobs[jid]
             fut.add_done_callback(del_on_cancel)
         fut.cancel()
         return True

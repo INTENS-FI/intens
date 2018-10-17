@@ -23,7 +23,7 @@ Comment: This is a Multimarkdown document.
   return also statuses).
 - POST defines a new job, returns `201 Created` with `Location` header
   and *id* in body.  Request content is input values.
-- DELETE deletes all jobs (add later).
+- DELETE deletes all jobs.
 
 #### `jobs/`*id*
 
