@@ -102,6 +102,16 @@ class Job(Persistent):
         s.results = OOBTree()
         s.error = None
 
+    def save_results(s, results):
+        """Save results into the database.
+        Previous results are replaced.  results is a sequence
+        of (name, value) pairs or an object with a method 'items'
+        that returns such a sequence (e.g., dict).  Transaction management
+        is up to the caller.
+        """
+        s.results.clear()
+        s.results.update(results)
+
     def close(s):
         """Remove any non-database resources associated with this job.
         On success return true: the job can now be deleted from the database

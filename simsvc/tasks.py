@@ -46,7 +46,7 @@ class TaskFlask(db.DBFlask):
         with s.transact(note="task_done") as conn:
             job = db.get_state(conn).jobs[jid]
             try:
-                job.results = fut.result()
+                job.save_results(fut.result())
             except CancelledError:
                 job.status = db.Job_status.CANCELLED
             except:
