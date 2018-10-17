@@ -39,19 +39,21 @@ def post_job():
 
 @jobs_bp.route('/<int:job>', methods=['DELETE'])
 def delete_job(job):
-    if tasks.cancel(job, delete=True):
-        return (jsonify("Cancelling, status was %s" % old),
-                HTTPStatus.ACCEPTED)
-    err = None
     with db.transact("delete_job") as conn:
-        st = db.get_state(conn)
+        jobs = db.get_state(conn)
         j = st.jobs[job]
-        if j.close():
+        old = j.status
+        j.status = db.Job_status.CANCELLED
+        if tasks.cancel(job, delete=True):
+            return (jsonify("Cancelling, status was %s" % old.name),
+                    HTTPStatus.ACCEPTED)
+        elif j.close():
             del st.jobs[job]
+            return util.empty_response
         else:
             err = j.error
-    return ((jsonify(err), HTTPStatus.INTERNAL_SERVER_ERROR)
-            if err else util.empty_response)
+    # Let's be careful - jsonify(err) might raise.
+    return jsonify(err), HTTPStatus.INTERNAL_SERVER_ERROR
 
 @jobs_bp.route('/', methods=['DELETE'])
 def delete_all_jobs():
@@ -60,11 +62,12 @@ def delete_all_jobs():
         ntot = len(jobs)
         ncanc = 0
         nerr = 0
-        for job in list(jobs):
-            if tasks.cancel(job, delete=True):
+        for jid, job in list(jobs.items()):
+            job.status = db.Job_status.CANCELLED
+            if tasks.cancel(jid, delete=True):
                 ncanc += 1
-            elif jobs[job].close():
-                del jobs[job]
+            elif job.close():
+                del jobs[jid]
             else:
                 nerr += 1
     return ((jsonify("Errors deleting %d/%d jobs" % (nerr, ntot)),
