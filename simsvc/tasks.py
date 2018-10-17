@@ -6,7 +6,7 @@ import sys, traceback as tb
 
 import flask
 from werkzeug.utils import cached_property
-from dask.distributed import Client, fire_and_forget
+from dask.distributed import Client, Variable, fire_and_forget
 
 import db
 
@@ -40,7 +40,7 @@ class TaskFlask(db.DBFlask):
         This removes the job from tasks, updates its status and stores results
         in the database.
         """
-        assert s.tasks[jid] == fut
+        assert s.tasks[jid][0] == fut
         assert fut.done()
         del s.tasks[jid]
         with s.transact(note="task_done") as conn:
@@ -61,7 +61,10 @@ class TaskFlask(db.DBFlask):
         Caller should provide a transaction and commit if launch returns.
         Otherwise we may have a running job that is not in the database.
         """
-        fut = s.tasks[jid] = s.client.compute(task(job.inputs))
+        canc = Variable()
+        canc.set(False)
+        fut = s.client.compute(task(job.inputs, canc))
+        s.tasks[jid] = fut, canc
         job.status = db.Job_status.SCHEDULED
         fut.add_done_callback(lambda f: s.task_done(jid, f))
         fire_and_forget(fut)
@@ -73,9 +76,10 @@ class TaskFlask(db.DBFlask):
         return true.  Otherwise return false.  Optionally arrange for
         the job to be deleted from the database after the task terminates.
         """
-        fut = s.tasks.get(jid)
-        if fut is None:
+        ent = s.tasks.get(jid)
+        if ent is None:
             return False
+        fut, canc = ent
         if delete:
             def del_on_cancel(fut):
                 if fut.cancelled():
@@ -84,6 +88,7 @@ class TaskFlask(db.DBFlask):
                         if jobs[jid].close():
                             del jobs[jid]
             fut.add_done_callback(del_on_cancel)
+        canc.set(True)
         fut.cancel()
         return True
 

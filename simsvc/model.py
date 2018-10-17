@@ -1,9 +1,12 @@
 """A mock model for simulator server testing.
 """
 
-import operator as op
+from concurrent.futures import CancelledError
 
-from dask import delayed
+import dask
 
-def task(inputs):
-    return delayed(lambda x, y: {"sum": x + y})(inputs['x'], inputs['y'])
+@dask.delayed
+def task(inputs, canc):
+    if canc.get():
+        raise CancelledError("Cancelled by request")
+    return {"sum": inputs['x'] + inputs['y']}
