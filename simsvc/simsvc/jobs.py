@@ -5,7 +5,8 @@ from flask import Blueprint, jsonify, request, current_app, url_for
 import werkzeug.exceptions as wexc
 from http import HTTPStatus
 
-import db, tasks, util
+from . import db, tasks
+import util
 
 jobs_bp = Blueprint('jobs_bp', __name__)
 

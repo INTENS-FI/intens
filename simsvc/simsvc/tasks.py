@@ -8,7 +8,7 @@ import flask
 from werkzeug.utils import cached_property
 from dask.distributed import Client, Variable, fire_and_forget
 
-import db
+from . import db
 
 from model import task
 
