@@ -50,13 +50,21 @@ Comment: This is a Multimarkdown document.
   maybe 409 Conflict or 503 Service unavailable) or waits.
 - Accessing results of failed computations returns 404 or maybe 410 Gone.
 
-##### `jobs/`*id*`/log`
+##### `jobs/`*id*`/dir/`*path*
 
-- Stdout & stderr of the simulation app.  GET only.  text/plain.
+- List the working directory of a job (if path is empty) or a
+  subdirectory.  Returns a list of [name, type]
+  pairs, where type is "-" for a regular file, "d" for a
+  directory, "l" for a symlink and "?" for unknown.
+- The file API is experimental, even more so than the rest.
 
-##### `jobs/`*id*`/files`
+##### `jobs/`*id*`/file/`*path*
 
-- Working dir of job for debugging.  TBD.  May also redirect.
+- Retrieve a file from the working directory of job (for debugging).
+  The file is sent as is.  MIME type may be guessed or something
+  generic.  This is for regular files, so path cannot be empty;
+  for directories, see above.
+- The file API is experimental, even more so than the rest.
 
 ## Types & such
 

@@ -2,6 +2,7 @@
 """
 
 from enum import Enum
+import shutil
 
 import flask
 from werkzeug.utils import cached_property
@@ -74,7 +75,6 @@ class Job_status(Enum):
     FAILED = -1
     CANCELLED = -2
 
-
 class Job(Persistent):
     """Persistent data for a single job.  Instance attributes:
     status	Job_status
@@ -83,11 +83,17 @@ class Job(Persistent):
     results	A mapping (name -> value) of results (generally empty
     		unless status == DONE).
     error	An error message (str) or None.
+    workdir	The working directory of the job (absolute file name)
+    		or None.
 
     Input and result values can be of any (serializable) type.  If they
     are mutable, do not modify them or you'll confuse persistence
     management.  Replacement with a new value is fine as OOBTree handles
     persistence then.
+
+    workdir starts as None but a working directory may be created by
+    assigning the result of tempfile.mkdtemp to workdir.  The close
+    method recursively removes workdir unless it is None.
     """
         
     def __init__(s, inputs, defaults):
@@ -100,7 +106,7 @@ class Job(Persistent):
         s.inputs.update(inputs)
         s.inputs.update(difference(defaults, s.inputs))
         s.results = OOBTree()
-        s.error = None
+        s.error = s.workdir = None
 
     def save_results(s, results):
         """Save results into the database.
@@ -120,8 +126,28 @@ class Job(Persistent):
 
         This should be called from a transaction that will be committed
         whether closing succeeds or not.
+
+        The working directory is only removed if
+        shutil.rmtree.avoids_symlink_attacks.  Otherwise we leave it
+        behind silently (returning True).  Finding a secure way to
+        clean up is left as an exercise.  Sorry.
         """
-        return True
+        good = True
+        def onerr(fn, path, ei):
+            import traceback as tb
+            nonlocal good
+            if good:
+                good = False
+                s.status = Job_status.INVALID
+                s.error = (("Error on closing job, on deleting %s:\n" % path)
+                           + tb.format_exception(*ei))
+            else:
+                s.error += "Failed to delete %s.\n" % path
+        if s.workdir is not None and shutil.rmtree.avoids_symlink_attacks:
+            shutil.rmtree(s.workdir, onerror=onerr)
+            if good:
+                s.workdir = None
+        return good
 
 def gen_jobid(jobs):
     if not jobs:

@@ -1,6 +1,9 @@
 """Requests for job management.
 """
 
+import os, tempfile
+
+import flask
 from flask import Blueprint, jsonify, request, current_app, url_for
 import werkzeug.exceptions as wexc
 from http import HTTPStatus
@@ -34,22 +37,27 @@ def post_job():
         raise wexc.UnsupportedMediaType("Not a JSON object")
     with db.transact("post_job") as conn:
         jid, j = db.create_job(conn, req)
-        tasks.launch(jid, j)
+        try:
+            j.workdir = tempfile.mkdtemp(dir=current_app.config['WORK_DIR'])
+            tasks.launch(jid, j)
+        except:
+            j.close()
+            raise
     return jsonify(jid), HTTPStatus.CREATED, {
         "Location": url_for('.get_job', job=jid)}
 
 @jobs_bp.route('/<int:job>', methods=['DELETE'])
 def delete_job(job):
     with db.transact("delete_job") as conn:
-        jobs = db.get_state(conn)
-        j = st.jobs[job]
+        jobs = db.get_state(conn).jobs
+        j = jobs[job]
         old = j.status
         j.status = db.Job_status.CANCELLED
         if tasks.cancel(job, delete=True):
             return (jsonify("Cancelling, status was %s" % old.name),
                     HTTPStatus.ACCEPTED)
         elif j.close():
-            del st.jobs[job]
+            del jobs[job]
             return util.empty_response
         else:
             err = j.error
@@ -83,3 +91,25 @@ def get_error(job):
     with db.transact() as conn:
         j = db.get_state(conn).jobs[job]
         return jsonify(j.error)
+
+def get_workdir(job):
+    with db.transact() as conn:
+        wd = db.get_state(conn).jobs[job].workdir
+    return os.path.abspath(wd)
+    
+@jobs_bp.route('/<int:job>/file/<path:fname>')
+def get_file(job, fname):
+    return flask.send_from_directory(get_workdir(job), fname)
+
+@jobs_bp.route('/<int:job>/dir/', defaults={'dname': "."})
+@jobs_bp.route('/<int:job>/dir/<path:dname>')
+def get_dir(job, dname):
+    def render_dirent(de):
+        typ = ("l" if de.is_symlink()
+               else "d" if de.is_dir()
+               else "-" if de.is_file()
+               else "?")
+        return de.name, typ
+    full = flask.safe_join(get_workdir(job), dname)
+    with os.scandir(full) as d:
+        return jsonify([render_dirent(f) for f in d])
