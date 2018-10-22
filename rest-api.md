@@ -67,12 +67,12 @@ Comment: This is a Multimarkdown document.
 - Time series are not directly supported but can be passed as *n* by 2
   arrays (nested).
 - Job statuses:
-    * scheduled: waiting to start
-    * running: started, log available
-    * done: succesful termination, results available
-    * canceled: trying to stop it, will delete once stopped
-    * failed: terminated in error, no results
-    * invalid: somehow corrupt, only possible to view files or delete.
+    * SCHEDULED: waiting to start
+    * RUNNING: started, log available
+    * DONE: succesful termination, results available
+    * CANCELLED: trying to stop it, will delete once stopped
+    * FAILED: terminated in error, no results
+    * INVALID: somehow corrupt
 
 ## Socket.IO API
 
