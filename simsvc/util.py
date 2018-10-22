@@ -1,5 +1,6 @@
 """Miscellaneous utilities.
 """
+import os
 from http import HTTPStatus
 
 empty_response = ("", HTTPStatus.NO_CONTENT)
@@ -18,3 +19,32 @@ def boolstr(s):
         return bool(int(s))
     except ValueError:
         return True
+
+def addrstr(astr):
+    """Parse string astr as a socket address.
+
+    Return (addr, af) where af is a socket.AddressFamily and the type
+    of addr depends on af (see documentation of the socket module).
+    If astr contains a slash it is interpreted as the file name of a
+    AF_UNIX socket.  Otherwise the syntax is host[:port] for an
+    AF_INET socket.  Port defaults to 8080.
+    """
+    from socket import AddressFamily as AF
+    if "/" in astr:
+        return astr, AF.AF_UNIX
+    elif ":" in astr:
+        addr, ps = astr.split(":")
+        port = int(ps)
+    else:
+        addr = astr
+        port = 8080
+    return (addr, port), AF.AF_INET
+
+def tryrm(fname):
+    """Remove file fname if it exists.
+    No-op if it doesn't.
+    """
+    try:
+        os.remove(fname)
+    except FileNotFoundError:
+        pass
