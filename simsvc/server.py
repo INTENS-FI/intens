@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os, atexit
+import atexit
 from socket import AddressFamily as AF
 
 from simsvc import create_app
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     app.logger.info("%d workers with %d cores",
                     len(cores), sum(cores.values()))
 
-    addr, af = addrstr(os.environ.get("SIMSVC_ADDR", "localhost"))
+    addr, af = addrstr(app.config['SIMSVC_ADDR'])
     if af == AF.AF_UNIX:
         tryrm(addr)
         atexit.register(tryrm, addr)
