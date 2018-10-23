@@ -8,8 +8,7 @@ from flask import Blueprint, jsonify, request, current_app, url_for
 import werkzeug.exceptions as wexc
 from http import HTTPStatus
 
-from . import db, tasks
-import util
+from . import db, tasks, util
 
 jobs_bp = Blueprint('jobs_bp', __name__)
 

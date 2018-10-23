@@ -6,8 +6,7 @@ from enum import Enum
 from flask import Blueprint, jsonify, request
 import werkzeug.exceptions as wexc
 
-from . import db
-import util
+from . import db, util
 
 get_vars = Blueprint('get_vars', __name__)
 set_vars = Blueprint('set_vars', __name__)

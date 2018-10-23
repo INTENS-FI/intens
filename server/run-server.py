@@ -4,7 +4,7 @@ import atexit
 from socket import AddressFamily as AF
 
 from simsvc import create_app
-from util import addrstr, tryrm
+from simsvc.util import addrstr, tryrm
 
 if __name__ == '__main__':
     from eventlet import wsgi, listen
