@@ -26,19 +26,15 @@ def addrstr(astr):
     Return (addr, af) where af is a socket.AddressFamily and the type
     of addr depends on af (see documentation of the socket module).
     If astr contains a slash it is interpreted as the file name of a
-    AF_UNIX socket.  Otherwise the syntax is host[:port] for an
-    AF_INET socket.  Port defaults to 8080.
+    AF_UNIX socket.  Otherwise the syntax is host:port for an
+    AF_INET socket.
     """
     from socket import AddressFamily as AF
     if "/" in astr:
         return astr, AF.AF_UNIX
-    elif ":" in astr:
-        addr, ps = astr.split(":")
-        port = int(ps)
     else:
-        addr = astr
-        port = 8080
-    return (addr, port), AF.AF_INET
+        addr, ps = astr.split(":")
+        return (addr, int(ps)), AF.AF_INET
 
 def tryrm(fname):
     """Remove file fname if it exists.
