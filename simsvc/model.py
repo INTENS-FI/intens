@@ -6,7 +6,7 @@ from concurrent.futures import CancelledError
 import dask
 
 @dask.delayed
-def task(inputs, canc):
-    if canc.get():
+def task(spec, cancel):
+    if cancel.get():
         raise CancelledError("Cancelled by request")
-    return {"sum": inputs['x'] + inputs['y']}
+    return {"sum": spec.inputs['x'] + spec.inputs['y']}

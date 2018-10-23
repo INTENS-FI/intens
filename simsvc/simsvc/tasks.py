@@ -12,6 +12,23 @@ from . import db
 
 from model import task
 
+class Task_spec(object):
+    """Parameters passed to a simulation task.
+    The task should treate this as read-only.
+
+    Instance attributes:
+    inputs	A dict-like of input parameter names and values
+    workdir	The name of the task working directory.  Any files that
+		the task creates here are immediately downloadable
+    		from the server.
+    jobid	The job id.  Possibly useful for log messages.
+    """
+    def __init__(s, jobid, job):
+        """Initialize from a .db.Job"""
+        s.inputs = job.inputs
+        s.workdir = job.workdir
+        s.jobid = jobid
+
 class TaskFlask(db.DBFlask):
     """A Flask app with Dask background jobs.
     """
@@ -63,7 +80,8 @@ class TaskFlask(db.DBFlask):
         """
         canc = Variable()
         canc.set(False)
-        fut = s.client.compute(task(job.inputs, canc))
+        spec = Task_spec(jid, job)
+        fut = s.client.compute(task(spec, canc))
         s.tasks[jid] = fut, canc
         job.status = db.Job_status.SCHEDULED
         fut.add_done_callback(lambda f: s.task_done(jid, f))
