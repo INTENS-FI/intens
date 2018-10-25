@@ -7,7 +7,8 @@ from simsvc import create_app
 from simsvc.util import addrstr, tryrm
 
 if __name__ == '__main__':
-    from eventlet import wsgi, listen
+    import eventlet
+    from eventlet import wsgi
 
     app = create_app()
 
@@ -18,8 +19,21 @@ if __name__ == '__main__':
     app.logger.info("%d workers with %d cores",
                     len(cores), sum(cores.values()))
 
+    def task_syncer():
+        while True:
+            app.sync_tasks()
+            eventlet.sleep(30)
+    eventlet.spawn_n(task_syncer)
+
+    def zodb_packer():
+        while True:
+            app.logger.info("Packing the database")
+            app.db.pack(days=7)
+            eventlet.sleep(86400) # 24 h
+    eventlet.spawn_n(zodb_packer)
+
     addr, af = addrstr(app.config['SIMSVC_ADDR'])
     if af == AF.AF_UNIX:
         tryrm(addr)
         atexit.register(tryrm, addr)
-    wsgi.server(listen(addr, af), app)
+    wsgi.server(eventlet.listen(addr, af), app)

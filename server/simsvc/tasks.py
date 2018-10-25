@@ -201,9 +201,12 @@ class TaskFlask(db.DBFlask):
         Then call refresh_jobs to ensure that all tasks have an active job.
         Everything is done in a single transaction created here.  When
         launching tasks exceptions are logged and suppressed.
+
+        This should be called at startup and periodically.  Calling it
+        at every request may be a bit expensive.
         """
         snap = frozenset(s.tasks)
-        with s.transact("sync_database") as conn:
+        with s.transact("sync_tasks") as conn:
             s.flush_updates(conn)
             jobs = db.get_state(conn).jobs
             for jid, job in jobs.items():
