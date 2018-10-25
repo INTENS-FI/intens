@@ -67,7 +67,7 @@ class TaskFlask(db.DBFlask):
         retrying; also failed updates are removed from the queue.  It
         is also possible that commit will fail.
 
-        Should be called periodically and before any request involving jobs.
+        Should be called before any request involving jobs.
 
         Joining s.updates is deprecated and not very useful: it waits
         for all update functions to be called and return but not for
@@ -92,8 +92,8 @@ class TaskFlask(db.DBFlask):
         database.  A database connection may be provided; if not,
         creates and commits its own transaction.
 
-        Should be called periodically and also before any request that
-        needs to distinguish between scheduled and running jobs.
+        Should be called before any request that needs to distinguish
+        between scheduled and running jobs.
         """
         if conn is None:
             with s.transact("refresh_jobs") as conn:
@@ -195,7 +195,7 @@ class TaskFlask(db.DBFlask):
     def sync_tasks(s):
         """Synchronise the database with run-time task state.
 
-        Compare tasks with active jobs in the database.  Call
+        Compare run-time tasks with active jobs in the database.  Call
         flush_updates, then check that each active job has a task; if
         not, launch one.  Most likely a previous app instance crashed.
         Then call refresh_jobs to ensure that all tasks have an active job.
@@ -203,7 +203,8 @@ class TaskFlask(db.DBFlask):
         launching tasks exceptions are logged and suppressed.
 
         This should be called at startup and periodically.  Calling it
-        at every request may be a bit expensive.
+        at every request may be a bit expensive.  flush_updates and
+        refresh_jobs should be sufficient for that and faster.
         """
         snap = frozenset(s.tasks)
         with s.transact("sync_tasks") as conn:
