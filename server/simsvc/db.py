@@ -66,7 +66,6 @@ def get_state(conn):
 
 class Job_status(Enum):
     """Job states.
-    Positive values are normal, others exceptional. 
     """
     INVALID = 0
     SCHEDULED = 1
@@ -74,6 +73,14 @@ class Job_status(Enum):
     DONE = 3
     FAILED = -1
     CANCELLED = -2
+
+    def active(s):
+        """Scheduled or running"""
+        return s in [s.SCHEDULED, s.RUNNING]
+
+    def normal(s):
+        """Scheduled, running or done"""
+        return s.value > 0
 
 class Job(Persistent):
     """Persistent data for a single job.  Instance attributes:

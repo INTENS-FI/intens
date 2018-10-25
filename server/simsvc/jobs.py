@@ -11,6 +11,7 @@ from http import HTTPStatus
 from . import db, tasks, util
 
 jobs_bp = Blueprint('jobs_bp', __name__)
+jobs_bp.before_request(tasks.flush_updates)
 
 @jobs_bp.route('/')
 def get_jobs():
@@ -47,37 +48,48 @@ def post_job():
 
 @jobs_bp.route('/<int:job>', methods=['DELETE'])
 def delete_job(job):
+    err = None
+    canc = tasks.cancel(job, delete=True)
+    if canc:
+        tasks.flush_updates()
     with db.transact("delete_job") as conn:
         jobs = db.get_state(conn).jobs
-        j = jobs[job]
-        old = j.status
-        j.status = db.Job_status.CANCELLED
-        if tasks.cancel(job, delete=True):
-            return (jsonify("Cancelling, status was %s" % old.name),
-                    HTTPStatus.ACCEPTED)
+        j = jobs.get(job)
+        if j is None:
+            if canc:
+                # That was quick!
+                return util.empty_response
+            else:
+                raise wexc.NotFound
+        elif canc:
+            j.status = db.Job_status.CANCELLED
         elif j.close():
             del jobs[job]
-            return util.empty_response
         else:
             err = j.error
-    # Let's be careful - jsonify(err) might raise.
-    return jsonify(err), HTTPStatus.INTERNAL_SERVER_ERROR
+    # Let's be careful - jsonify might raise.
+    return ((jsonify("Cancelling active task"), HTTPStatus.ACCEPTED) if canc
+            else util.empty_response if err is None
+            else (jsonify(err), HTTPStatus.INTERNAL_SERVER_ERROR))
 
 @jobs_bp.route('/', methods=['DELETE'])
 def delete_all_jobs():
+    canc = frozenset(tasks.cancel_all(delete=True))
+    if canc:
+        tasks.flush_updates()
     with db.transact("delete_all_jobs") as conn:
         jobs = db.get_state(conn).jobs
-        ntot = len(jobs)
-        ncanc = 0
-        nerr = 0
+        nnow = len(jobs)
+        ncanc = nerr = 0
         for jid, job in list(jobs.items()):
-            job.status = db.Job_status.CANCELLED
-            if tasks.cancel(jid, delete=True):
+            if jid in canc:
                 ncanc += 1
+                job.status = db.Job_status.CANCELLED
             elif job.close():
                 del jobs[jid]
             else:
                 nerr += 1
+    ntot = len(canc) + nnow - ncanc
     return ((jsonify("Errors deleting %d/%d jobs" % (nerr, ntot)),
              HTTPStatus.INTERNAL_SERVER_ERROR) if nerr
             else (jsonify("%d/%d job deletions pending cancellation"
