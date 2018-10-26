@@ -7,8 +7,7 @@ from simsvc import create_app
 from simsvc.util import addrstr, tryrm
 
 if __name__ == '__main__':
-    import eventlet
-    from eventlet import wsgi
+    from simsvc.sockio import socketio
 
     app = create_app()
 
@@ -22,18 +21,19 @@ if __name__ == '__main__':
     def task_syncer():
         while True:
             app.sync_tasks()
-            eventlet.sleep(30)
-    eventlet.spawn_n(task_syncer)
+            socketio.sleep(30)
+    socketio.start_background_task(task_syncer)
 
     def zodb_packer():
         while True:
             app.logger.info("Packing the database")
             app.db.pack(days=7)
-            eventlet.sleep(86400) # 24 h
-    eventlet.spawn_n(zodb_packer)
+            socketio.sleep(86400) # 24 h
+    socketio.start_background_task(zodb_packer)
 
     addr, af = addrstr(app.config['SIMSVC_ADDR'])
     if af == AF.AF_UNIX:
+        raise ValueError("Sorry, Socket.IO does not do AF_UNIX")
         tryrm(addr)
         atexit.register(tryrm, addr)
-    wsgi.server(eventlet.listen(addr, af), app)
+    socketio.run(app, *addr)

@@ -43,6 +43,11 @@ class TaskFlask(db.DBFlask):
     		from them.  Modifications are queued here instead.
     		Entries are functions taking a database connection as argument.
     		They are executed by flush_updates.
+    monitor	An optional launch monitor.  Unless None
+    		monitor(job id, future) is called after a new job is launched.
+    		The monitor may call future.add_done_callback to detect
+    		job termination.  Exceptions raised by monitor are logged
+    		and suppressed.
     """
     def __init__(s, *args, **kws):
         """args and kws are passed to super.
@@ -50,6 +55,7 @@ class TaskFlask(db.DBFlask):
         super().__init__(*args, **kws)
         s.tasks = {}
         s.updates = queue.Queue()
+        s.monitor = None
 
     @cached_property
     def client(s):
@@ -154,6 +160,11 @@ class TaskFlask(db.DBFlask):
         job.status = db.Job_status.SCHEDULED
         fut.add_done_callback(lambda f: s.task_done(jid, f))
         fire_and_forget(fut)
+        if s.monitor is not None:
+            try:
+                s.monitor.launch(jid, fut)
+            except:
+                s.logger.exception("monitor.launch failed for job %s", jid)
 
     def cancel(s, jid, delete=False):
         """Attempt to cancel a task.
