@@ -9,28 +9,25 @@ see the Flask-SocketIO docs for other server options.
 """
 
 from flask import current_app, request
-from flask_socketio import SocketIO
-
-socketio = SocketIO()
+from flask_socketio import Namespace
 
 def logger(app=None):
     if app is None:
         app = current_app
     return app.logger.getChild("sockio")
 
-@socketio.on('connect')
-def on_connect():
-    addr = request.remote_addr
-    if addr is None:
-        logger().error(
-            "Socket.IO: refusing connection from unknown address")
-        return False
-    else:
-        logger().info("Socket.IO: %s connected", addr)
+class Simsvc_namespace(Namespace):
+    def on_connect():
+        addr = request.remote_addr
+        if addr is None:
+            logger().error(
+                "Socket.IO: refusing connection from unknown address")
+            return False
+        else:
+            logger().info("Socket.IO: %s connected", addr)
 
-@socketio.on('disconnect')
-def on_disconnect():
-    logger().info("Socket.IO: %s disconnected", request.remote_addr)
+    def on_disconnect():
+        logger().info("Socket.IO: %s disconnected", request.remote_addr)
 
 class Monitor(object):
     """A monitor that sends events over Socket.IO.
@@ -38,7 +35,7 @@ class Monitor(object):
     app		Flask app that we monitor
     sio		SocketIO instance to use
     """
-    def __init__(s, app, sio=socketio):
+    def __init__(s, app, sio):
         s.app = app
         s.sio = sio
         if s.sio.async_mode == 'threading':

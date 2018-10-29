@@ -4,7 +4,7 @@
 def create_app(**kws):
     """Create and return the simulation server Flask app.
     
-    kws is passed to socketio.init_app.
+    kws is passed to the SocketIO constructor.
     
     Also start up coroutines to periodically sync tasks and pack the ZODB
     database unless socketio.async_mode is 'threading', in which case only sync
@@ -13,16 +13,17 @@ def create_app(**kws):
     prefers Eventlet.  We assume that greenthreads are safe against concurrency
     issues, in particular the standard library has not been monkey-patched.
     """
+    from flask_socketio import SocketIO
+
     from .tasks import TaskFlask
     from .config import Config
-    from .sockio import socketio
     from . import sockio, jobs, vars
 
     app = TaskFlask(__name__)
     app.config.from_object(Config)
 
-    socketio.init_app(app, logger=sockio.logger(app), **kws)
-    app.monitor = sockio.Monitor(app)
+    socketio = SocketIO(app, logger=sockio.logger(app), **kws)
+    app.monitor = sockio.Monitor(app, socketio)
 
     app.register_blueprint(jobs.jobs_bp, url_prefix="/jobs")
     app.register_blueprint(vars.get_vars, url_prefix="/default",
