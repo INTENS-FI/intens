@@ -13,22 +13,24 @@ from flask_socketio import SocketIO, disconnect
 
 socketio = SocketIO()
 
-def _logger():
-    return current_app.logger.getChild("sockio")
+def logger(app=None):
+    if app is None:
+        app = current_app
+    return app.logger.getChild("sockio")
 
 @socketio.on('connect')
 def handle_connect(sid, env):
     addr = request.remote_addr
     if addr is None:
-        _logger().error(
+        logger().error(
             "Socket.IO: refusing connection from unknown address")
         return False
     else:
-        _logger().info("Socket.IO: %s connected", addr)
+        logger().info("Socket.IO: %s connected", addr)
 
 @socketio.on('disconnect')
 def handle_disconnect(sid):
-    _logger().info("Socket.IO: %s disconnected", request.remote_addr)
+    logger().info("Socket.IO: %s disconnected", request.remote_addr)
 
 class Monitor(object):
     """A monitor that sends events over Socket.IO.
