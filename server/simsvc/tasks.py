@@ -162,7 +162,7 @@ class TaskFlask(db.DBFlask):
         fire_and_forget(fut)
         if s.monitor is not None:
             try:
-                s.monitor.launch(jid, fut)
+                s.monitor(jid, fut)
             except:
                 s.logger.exception("monitor.launch failed for job %s", jid)
 

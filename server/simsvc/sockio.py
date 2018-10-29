@@ -9,7 +9,7 @@ see the Flask-SocketIO docs for other server options.
 """
 
 from flask import current_app, request
-from flask_socketio import SocketIO, disconnect
+from flask_socketio import SocketIO
 
 socketio = SocketIO()
 
@@ -19,7 +19,7 @@ def logger(app=None):
     return app.logger.getChild("sockio")
 
 @socketio.on('connect')
-def handle_connect(sid, env):
+def on_connect():
     addr = request.remote_addr
     if addr is None:
         logger().error(
@@ -29,7 +29,7 @@ def handle_connect(sid, env):
         logger().info("Socket.IO: %s connected", addr)
 
 @socketio.on('disconnect')
-def handle_disconnect(sid):
+def on_disconnect():
     logger().info("Socket.IO: %s disconnected", request.remote_addr)
 
 class Monitor(object):
@@ -41,10 +41,30 @@ class Monitor(object):
     def __init__(s, app, sio=socketio):
         s.app = app
         s.sio = sio
-    
+        if s.sio.async_mode == 'threading':
+            s._queue = None
+        elif s.sio.async_mode == 'eventlet':
+            from queue import Queue
+            s._queue = Queue()
+            def emitter():
+                from eventlet import tpool
+                while True:
+                    ev, arg = tpool.execute(s._queue.get)
+                    s.sio.emit(ev, arg)
+            s.sio.start_background_task(emitter)
+        else:
+            raise ValueError("Unsupported socketio.asyncmode %s"
+                             % s.sio.async_mode)
+
     def __call__(s, jid, fut):
         fut.add_done_callback(lambda fut: s.finish(jid, fut))
         s.sio.emit('launched', jid)
+    
+    def _emit(s, ev, arg):
+        if s._queue is None:
+            s.sio.emit(ev, arg)
+        else:
+            s._queue.put((ev, arg))
 
     def finish(s, jid, fut):
-        s.sio.emit('terminated', jid)
+        s._emit('terminated', jid)
