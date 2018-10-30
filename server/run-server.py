@@ -18,7 +18,7 @@ if __name__ == '__main__':
     app = create_app(async_mode='eventlet')
 
     addr, af = addrstr(app.config['SIMSVC_ADDR'])
-    if af == AF.AF_UNIX:
+    if af == getattr(AF, 'AF_UNIX', None):
         tryrm(addr)
         atexit.register(tryrm, addr)
     wsgi.server(eventlet.listen(addr, af), app)
