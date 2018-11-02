@@ -84,6 +84,8 @@ Comment: This is a Multimarkdown document.
 
 ## Socket.IO API
 
-- To be implemented after the HTTP stuff.  Poll until this is done.
-- Job status changes are emitted to a Socket.IO room named after the
-  job id.
+- Experimental, even more so than HTTP.
+- Messages:
+    * `launched jobid`
+    * `terminated {"job": jobid, "status": st}` where st is
+      `"done"`, `"failed"` or `"cancelled"`.

@@ -10,8 +10,8 @@ logging.basicConfig()
 def on_launched(jid):
     print("Launched", jid)
 
-def on_terminated(jid):
-    print("Terminated", jid)
+def on_terminated(arg):
+    print("Terminated", arg)
 
 with SocketIO("localhost", 8080) as sioc:
     sioc.on('launched', on_launched)

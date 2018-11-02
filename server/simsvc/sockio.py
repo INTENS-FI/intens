@@ -64,4 +64,7 @@ class Monitor(object):
             s._queue.put((ev, arg))
 
     def finish(s, jid, fut):
-        s._emit('terminated', jid)
+        st = ('cancelled' if fut.cancelled()
+              else 'failed' if fut.exception()
+              else 'done')
+        s._emit('terminated', {'job': jid, 'status': st})
