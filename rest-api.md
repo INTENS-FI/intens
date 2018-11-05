@@ -85,7 +85,9 @@ Comment: This is a Multimarkdown document.
 ## Socket.IO API
 
 - Experimental, even more so than HTTP.
-- Messages:
-    * `launched jobid`
-    * `terminated {"job": jobid, "status": st}` where st is
+- The server emits task-related events:
+    * `launched` jobid,
+    * `terminated {"job":` jobid, `"status":` st`}` where st is
       `"done"`, `"failed"` or `"cancelled"`.
+- Later versions may introduce also commands.  Currently this is just
+  server to client; client to server goes over HTTP.
