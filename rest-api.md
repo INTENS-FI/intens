@@ -50,21 +50,25 @@ Comment: This is a Multimarkdown document.
   maybe 409 Conflict or 503 Service unavailable) or waits.
 - Accessing results of failed computations returns 404 or maybe 410 Gone.
 
+##### `jobs/`*id*`/files/`*path*
+
+- Retrieve a file from the working directory of a job (for debugging).
+  The file is sent as is.  MIME type may be guessed or something
+  generic.
+- It is not specified what happens if path refers to a directory (is
+  empty or ends in a slash).  The server may produce a HTML directory
+  listing to facilitate access with a regular web browser.
+- These URLs may redirect to a location that the server associates
+  with static files.  The static files may be served by a differnent
+  server that is more efficient with them.
+
 ##### `jobs/`*id*`/dir/`*path*
 
 - List the working directory of a job (if path is empty) or a
   subdirectory.  Returns a list of [name, type]
   pairs, where type is "-" for a regular file, "d" for a
   directory, "l" for a symlink and "?" for unknown.
-- The file API is experimental, even more so than the rest.
-
-##### `jobs/`*id*`/file/`*path*
-
-- Retrieve a file from the working directory of job (for debugging).
-  The file is sent as is.  MIME type may be guessed or something
-  generic.  This is for regular files, so path cannot be empty;
-  for directories, see above.
-- The file API is experimental, even more so than the rest.
+- This API is experimental, even more so than the rest.
 
 ## Types & such
 

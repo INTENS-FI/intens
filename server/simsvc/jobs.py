@@ -108,7 +108,7 @@ def get_workdir(job):
         wd = db.get_state(conn).jobs[job].workdir
     return os.path.abspath(wd)
     
-@jobs_bp.route('/<int:job>/file/<path:fname>')
+@jobs_bp.route('/<int:job>/files/<path:fname>')
 def get_file(job, fname):
     return flask.send_from_directory(get_workdir(job), fname)
 
