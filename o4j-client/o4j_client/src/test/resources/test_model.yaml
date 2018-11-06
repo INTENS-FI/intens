@@ -1,0 +1,7 @@
+url: http://localhost:8080/
+simulatorName: bogus
+defaults:
+  simulationStart: 2018-01-01T00:00:00Z
+  simulationEnd: 2018-01-02T00:00:00Z
+  timeOrigin: 2018-01-01T00:00:00Z
+nominalSimulationRuntime: PT1H

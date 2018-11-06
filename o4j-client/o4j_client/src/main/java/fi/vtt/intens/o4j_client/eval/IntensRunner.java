@@ -14,7 +14,7 @@ public class IntensRunner implements SimulationRunner {
 
 	}
 
-	public CompletableFuture<SimulationOutput> start(SimulationInput input) throws IOException {
+	public IntensJob start(SimulationInput input) throws IOException {
 		// TODO Auto-generated method stub
 		return null;
 	}

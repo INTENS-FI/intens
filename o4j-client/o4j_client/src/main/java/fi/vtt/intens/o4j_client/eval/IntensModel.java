@@ -2,48 +2,57 @@ package fi.vtt.intens.o4j_client.eval;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.net.URL;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale.LanguageRange;
 import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import eu.cityopt.sim.eval.Namespace;
 import eu.cityopt.sim.eval.SimulationInput;
 import eu.cityopt.sim.eval.SimulationModel;
 import eu.cityopt.sim.eval.SimulatorManager;
 
+/**
+ * A reference to a pre-deployed simsvc instance.
+ * This is intended to be read from YAML with Jackson.
+ */
 public class IntensModel implements SimulationModel {
+	public URL url;
+	public String simulatorName; 
+	public Defaults defaults;
+	public Duration nominalSimulationRuntime;
 
-	public void close() throws IOException {
-		// TODO Auto-generated method stub
+	IntensManager simulationManager;
 
-	}
+	public void close() throws IOException {}
 
+	@JsonIgnore
 	public SimulatorManager getSimulatorManager() {
-		// TODO Auto-generated method stub
-		return null;
+		return simulationManager;
 	}
 
 	public String getSimulatorName() {
-		// TODO Auto-generated method stub
-		return null;
+		return simulatorName;
 	}
 
 	public Defaults getDefaults() {
-		// TODO Auto-generated method stub
-		return null;
+		return defaults;
 	}
 
 	public Duration getNominalSimulationRuntime() {
-		// TODO Auto-generated method stub
-		return null;
+		return nominalSimulationRuntime;
 	}
 
+	@JsonIgnore
 	public String getDescription(List<LanguageRange> priorityList) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
+	@JsonIgnore
 	public byte[] getOverviewImageData() {
 		// TODO Auto-generated method stub
 		return null;
