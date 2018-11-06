@@ -20,48 +20,49 @@ import eu.cityopt.sim.eval.SimulatorManager;
  * This is intended to be read from YAML with Jackson.
  */
 public class IntensModel implements SimulationModel {
-	public URL url;
-	public String simulatorName; 
-	public Defaults defaults;
-	public Duration nominalSimulationRuntime;
+    public URL url;
+    public String simulatorName; 
+    public Defaults defaults;
+    public Duration nominalSimulationRuntime;
 
-	IntensManager simulationManager;
+    IntensManager simulationManager;
 
-	public void close() throws IOException {}
+    public void close() throws IOException {}
 
-	@JsonIgnore
-	public SimulatorManager getSimulatorManager() {
-		return simulationManager;
-	}
+    @JsonIgnore
+    public SimulatorManager getSimulatorManager() {
+        return simulationManager;
+    }
 
-	public String getSimulatorName() {
-		return simulatorName;
-	}
+    public String getSimulatorName() {
+        return simulatorName;
+    }
 
-	public Defaults getDefaults() {
-		return defaults;
-	}
+    public Defaults getDefaults() {
+        return defaults;
+    }
 
-	public Duration getNominalSimulationRuntime() {
-		return nominalSimulationRuntime;
-	}
+    public Duration getNominalSimulationRuntime() {
+        return nominalSimulationRuntime;
+    }
 
-	@JsonIgnore
-	public String getDescription(List<LanguageRange> priorityList) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @JsonIgnore
+    public String getDescription(List<LanguageRange> priorityList) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@JsonIgnore
-	public byte[] getOverviewImageData() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @JsonIgnore
+    public byte[] getOverviewImageData() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	public SimulationInput findInputsAndOutputs(Namespace newNamespace, Map<String, Map<String, String>> units,
-			int detailLevel, Writer warningWriter) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    public SimulationInput findInputsAndOutputs(
+            Namespace newNamespace, Map<String, Map<String, String>> units,
+            int detailLevel, Writer warningWriter) throws IOException {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }

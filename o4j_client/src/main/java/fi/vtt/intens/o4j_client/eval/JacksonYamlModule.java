@@ -12,10 +12,10 @@ import com.google.inject.name.Named;
  * Bindings for reading YAML with Jackson.
  */
 public class JacksonYamlModule extends AbstractModule {
-	@Provides
-	@Named("intensModel")
-	@Singleton
-	public static ObjectMapper getIntensModelOM() {
-		return new YAMLMapper().registerModule(new JavaTimeModule());
-	}
+    @Provides
+    @Named("intensModel")
+    @Singleton
+    public static ObjectMapper getIntensModelOM() {
+        return new YAMLMapper().registerModule(new JavaTimeModule());
+    }
 }

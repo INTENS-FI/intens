@@ -24,35 +24,36 @@ import eu.cityopt.sim.eval.SimulatorManager;
  *
  */
 public class IntensManager implements SimulatorManager {
-	public ObjectMapper om;
-	
-	@Inject
-	public IntensManager(@Named("intensModel") ObjectMapper om) {
-		this.om = om;
-	}
+    public ObjectMapper om;
 
-	public void close() throws IOException {}
-	
-	public IntensModel parseModel(String simulatorName, InputStream modelData)
-			throws IOException, ConfigurationException {
-		try {
-			IntensModel model = om.readValue(modelData, IntensModel.class);
-			model.simulationManager = this;
-			return model;
-		} catch (JsonParseException | JsonMappingException e) {
-			if (simulatorName == null) {
-				throw new AlienModelException("Failed to parse as IntensModel", e);
-			} else {
-				throw new ConfigurationException("Failed to parse as IntensModel", e);
-			}
-		}
-	}
+    @Inject
+    public IntensManager(@Named("intensModel") ObjectMapper om) {
+        this.om = om;
+    }
 
-	public IntensRunner makeRunner(SimulationModel model, Namespace namespace)
-			throws IOException, ConfigurationException {
-		IntensModel intModel = (IntensModel)model;
-		// TODO Auto-generated method stub
-		return null;
-	}
+    public void close() throws IOException {}
+
+    public IntensModel parseModel(String simulatorName, InputStream modelData)
+            throws IOException, ConfigurationException {
+        try {
+            IntensModel model = om.readValue(modelData, IntensModel.class);
+            model.simulationManager = this;
+            return model;
+        } catch (JsonParseException | JsonMappingException e) {
+            String msg = "Failed to parse as IntensModel";
+            if (simulatorName == null) {
+                throw new AlienModelException(msg, e);
+            } else {
+                throw new ConfigurationException(msg, e);
+            }
+        }
+    }
+
+    public IntensRunner makeRunner(SimulationModel model, Namespace namespace)
+            throws IOException, ConfigurationException {
+        IntensModel intModel = (IntensModel)model;
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }
