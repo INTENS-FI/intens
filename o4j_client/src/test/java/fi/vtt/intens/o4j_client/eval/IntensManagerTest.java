@@ -23,5 +23,7 @@ public class IntensManagerTest {
         mgr.om.writeValue(System.out, mdl);
         assertSame("Model simulator manager not set correctly",
                    mgr, mdl.getSimulatorManager());
+        assertNotNull("Null defaults", mdl.getDefaults());
+        assertNotNull("Null descriptions", mdl.descriptions);
     }
 }

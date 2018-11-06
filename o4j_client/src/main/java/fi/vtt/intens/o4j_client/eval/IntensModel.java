@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.Writer;
 import java.net.URL;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Locale.LanguageRange;
 import java.util.Map;
 
@@ -18,11 +20,13 @@ import eu.cityopt.sim.eval.SimulatorManager;
 /**
  * A reference to a pre-deployed simsvc instance.
  * This is intended to be read from YAML with Jackson.
+ * An url is required, most other parameters are optional. 
  */
 public class IntensModel implements SimulationModel {
+    public Map<Locale, String> descriptions = new HashMap<>();
     public URL url;
     public String simulatorName; 
-    public Defaults defaults;
+    public Defaults defaults = new Defaults();
     public Duration nominalSimulationRuntime;
 
     IntensManager simulationManager;
@@ -48,8 +52,8 @@ public class IntensModel implements SimulationModel {
 
     @JsonIgnore
     public String getDescription(List<LanguageRange> priorityList) {
-        // TODO Auto-generated method stub
-        return null;
+        Locale loc = Locale.lookup(priorityList, descriptions.keySet());
+        return (loc != null) ? descriptions.get(loc) : null;
     }
 
     @JsonIgnore

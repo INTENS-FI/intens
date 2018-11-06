@@ -1,5 +1,8 @@
+descriptions:
+  en: This is just a test.
+  fi: Testataan nyt sitten ääkkösetkin.
 url: http://localhost:8080/
-simulatorName: bogus
+simulatorName: bogolab
 defaults:
   simulationStart: 2018-01-01T00:00:00Z
   simulationEnd: 2018-01-02T00:00:00Z
