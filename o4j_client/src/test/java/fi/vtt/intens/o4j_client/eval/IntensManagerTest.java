@@ -10,7 +10,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 
 public class IntensManagerTest {
-    private Injector inj = Guice.createInjector(new JacksonYamlModule());
+    private Injector inj = Guice.createInjector(new IntensJacksonModule());
 
     @Test
     public void testParseModel() throws Exception {
@@ -20,7 +20,7 @@ public class IntensManagerTest {
                 "/test_model.yaml")) {
             mdl = mgr.parseModel(null, str);
         }
-        mgr.om.writeValue(System.out, mdl);
+        mgr.modelOM.writeValue(System.out, mdl);
         assertSame("Model simulator manager not set correctly",
                    mgr, mdl.getSimulatorManager());
         assertNotNull("Null defaults", mdl.getDefaults());

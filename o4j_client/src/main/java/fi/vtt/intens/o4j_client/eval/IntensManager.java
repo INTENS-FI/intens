@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.JacksonYAMLParseException;
+import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 
 import eu.cityopt.sim.eval.AlienModelException;
 import eu.cityopt.sim.eval.ConfigurationException;
@@ -24,11 +25,25 @@ import eu.cityopt.sim.eval.SimulatorManager;
  *
  */
 public class IntensManager implements SimulatorManager {
-    public ObjectMapper om;
+
+    /**
+     * The {@link ObjectMapper} used by {@link #parseModel}.
+     * Normally this reads YAML but I suppose one could also put
+     * in a JSON mapper or even XML. 
+     */
+    public ObjectMapper modelOM;
+    
+    /**
+     * The {@link ObjectMapper} used by {@link IntensRunner}s for talking
+     * to the server.  It needs to have {@link JsonOrgModule}.
+     */
+    public ObjectMapper protocolOM;
 
     @Inject
-    public IntensManager(@Named("intensModel") ObjectMapper om) {
-        this.om = om;
+    public IntensManager(@Named("intensModel") ObjectMapper modelOM,
+                         @Named("intensProtocol") ObjectMapper protocolOM) {
+        this.modelOM = modelOM;
+        this.protocolOM = protocolOM;
     }
 
     public void close() throws IOException {}
@@ -36,7 +51,8 @@ public class IntensManager implements SimulatorManager {
     public IntensModel parseModel(String simulatorName, InputStream modelData)
             throws IOException, ConfigurationException {
         try {
-            IntensModel model = om.readValue(modelData, IntensModel.class);
+            IntensModel model = modelOM.readValue(
+                    modelData, IntensModel.class);
             model.simulationManager = this;
             return model;
         } catch (JsonParseException | JsonMappingException e) {
@@ -51,9 +67,6 @@ public class IntensManager implements SimulatorManager {
 
     public IntensRunner makeRunner(SimulationModel model, Namespace namespace)
             throws IOException, ConfigurationException {
-        IntensModel intModel = (IntensModel)model;
-        // TODO Auto-generated method stub
-        return null;
+        return new IntensRunner((IntensModel)model);
     }
-
 }

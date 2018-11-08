@@ -2,7 +2,7 @@ package fi.vtt.intens.o4j_client.eval;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.net.URL;
+import java.net.URI;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -11,21 +11,26 @@ import java.util.Locale.LanguageRange;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import eu.cityopt.sim.eval.Namespace;
 import eu.cityopt.sim.eval.SimulationInput;
 import eu.cityopt.sim.eval.SimulationModel;
-import eu.cityopt.sim.eval.SimulatorManager;
 
 /**
  * A reference to a pre-deployed simsvc instance.
  * This is intended to be read from YAML with Jackson.
  * An url is required, most other parameters are optional. 
  */
+@JsonInclude(Include.NON_ABSENT)
 public class IntensModel implements SimulationModel {
+    @JsonProperty("url")
+    public URI uri;
     public Map<Locale, String> descriptions = new HashMap<>();
-    public URL url;
-    public String simulatorName; 
+    public String simulatorName;
+    public String logFile;
     public Defaults defaults = new Defaults();
     public Duration nominalSimulationRuntime;
 
@@ -34,7 +39,7 @@ public class IntensModel implements SimulationModel {
     public void close() throws IOException {}
 
     @JsonIgnore
-    public SimulatorManager getSimulatorManager() {
+    public IntensManager getSimulatorManager() {
         return simulationManager;
     }
 
