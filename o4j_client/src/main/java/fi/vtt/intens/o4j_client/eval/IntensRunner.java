@@ -1,22 +1,30 @@
 package fi.vtt.intens.o4j_client.eval;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
+import java.net.URLEncoder;
+
 import static java.net.HttpURLConnection.*;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.io.CharStreams;
+
 import eu.cityopt.sim.eval.SimulationFailure;
 import eu.cityopt.sim.eval.SimulationInput;
 import eu.cityopt.sim.eval.SimulationResults;
@@ -55,68 +63,71 @@ public class IntensRunner implements SimulationRunner {
     }
     
     /**
-     * Attempt to parse a HTTP response as a sim-eval type.
-     * resp is in JSON, thus the parsers of sim-eval are of limited use.
+     * Attempt to parse a JsonNode as a sim-eval type.
+     * @throws JsonParseException if json is of incompatible type
+     * @throws IllegalArgumentException if elements of json are of incompatible
+     *   type (when parsing a list) or if type is unsupported. 
      */
-    private Object parseResult(Type typ, HttpResponse<String> resp)
+    private Object parseResult(Type type, JsonNode json)
             throws IOException {
-        if (resp.statusCode() != HTTP_OK)
-            throw new HttpException(resp.statusCode(), resp.body());
-        switch(typ) {
+        switch(type) {
         case DOUBLE:
         case TIMESTAMP:
-            return om.readValue(resp.body(), Double.class);
+            return om.treeToValue(json, Double.class);
         case INTEGER:
-            return om.readValue(resp.body(), Integer.class);
+            return om.treeToValue(json, Integer.class);
         case STRING:
-            return om.readValue(resp.body(), String.class);
+            return om.treeToValue(json, String.class);
         case LIST_OF_DOUBLE:
         case LIST_OF_INTEGER:
         case LIST_OF_TIMESTAMP:
             @SuppressWarnings("unchecked")
-            List<Object> val = om.readValue(resp.body(), List.class);
-            if (!typ.isCompatible(val))
-                throw new IOException("Incompatible list for " + typ);
+            List<Object> val = om.treeToValue(json, List.class);
+            if (!type.isCompatible(val))
+                throw new IllegalArgumentException(
+                        "Incompatible list for " + type + ": " + json);
             return val;
         default:
-            throw new IOException("Unsupported type " + typ);
+            throw new IllegalArgumentException("Unsupported type " + type);
         }
     }
-    
-    private synchronized IOException putResult(
-            SimulationResults res, String comp, String op, Type typ,
-            HttpResponse<String> resp) {
-        try {
-            res.put(comp, op, parseResult(typ, resp));
-            return null;
-        } catch (IOException e) {
-            logger.error("putResult failed for " + comp + "." + op, e);
-            return e;
-        }
-    }
-    
+
     private void getResults(int jobid, IntensJob job)
             throws IOException, InterruptedException {
-        var res_uri = model.uri.resolve("jobs/" + jobid + "/results/");
         var res = new SimulationResults(job.input, getLog(jobid));
         var ns = job.input.getNamespace();
-        CompletableFuture<IOException>
-            jobs = CompletableFuture.completedFuture(null);
-        for (var comp_kv : ns.components.entrySet()) {
-            for (var out_kv : comp_kv.getValue().outputs.entrySet()) {
-                var req = HttpRequest.newBuilder(res_uri.resolve(
-                        String.join(".", comp_kv.getKey(), out_kv.getKey())))
-                        .build();
-                jobs = http.sendAsync(req, BodyHandlers.ofString())
-                        .thenApply(resp -> putResult(
-                                res, comp_kv.getKey(), out_kv.getKey(),
-                                out_kv.getValue(), resp))
-                        .thenCombine(jobs, (e2, e1) -> e1 != null ? e1 : e2);
+        String only = ns.components.entrySet().stream()
+                    .flatMap(kv -> kv.getValue().outputs.keySet().stream().map(
+                                     op -> kv.getKey() + "." + op))
+                    .collect(Collectors.joining(","));
+        var uri = model.uri.resolve("jobs/" + jobid + "/results/?only="
+                                    + URLEncoder.encode(only, "UTF-8"));
+        var req = HttpRequest.newBuilder(uri).build();
+        var resp = http.send(req, BodyHandlers.ofInputStream());
+        try (var body = new InputStreamReader(resp.body())) {
+            if (resp.statusCode() != HTTP_OK)
+                throw new HttpException(resp.statusCode(),
+                                        CharStreams.toString(body));
+            var root = (ObjectNode)om.readTree(body);
+            for (var comp_kv : ns.components.entrySet()) {
+                String comp = comp_kv.getKey();
+                for (var out_kv : comp_kv.getValue().outputs.entrySet()) {
+                    String
+                        out = out_kv.getKey(),
+                        qname = comp + "." + out;
+                    var val = root.get(qname);
+                    if (val == null)
+                        logger.error("Missing value from response: "+ qname);
+                    else
+                        res.put(comp, out,
+                                parseResult(out_kv.getValue(), val));
+                }
             }
+        } catch (ClassCastException e) {
+            throw new IOException("getResults: response not a JSON object", e);
+        } catch (IllegalArgumentException e) {
+            throw new IOException("getResults: type conversion failed", e);
         }
-        IOException e = jobs.join();
-        if (e != null)
-            throw e;
         job.complete(res);
     }
 
@@ -132,6 +143,26 @@ public class IntensRunner implements SimulationRunner {
                 job.input, true, msg, getLog(jobid)));
     }
 
+    private void completeJob(int jobid, JobStatus st, IntensJob job)
+            throws IOException, InterruptedException {
+        switch (st) {
+        case DONE:
+            getResults(jobid, job);
+            return;
+        case FAILED:
+            getError(jobid, job);
+            return;
+        case CANCELLED:
+            job.set_cancelled();
+            return;
+        default:
+            job.complete(new SimulationFailure(
+                    job.input, false,
+                    "Abnormal job status " + st, getLog(jobid)));
+            return;
+        }
+    }
+    
     /**
      * Query the server for the status of job <code>jobid</code>.  If it has
      * completed (successfully or not), complete <code>job</code> accordingly.
@@ -162,22 +193,7 @@ public class IntensRunner implements SimulationRunner {
                 jobs.put(jobid, job);
                 return false;
             }
-            switch (st) {
-            case DONE:
-                getResults(jobid, job);
-                return true;
-            case FAILED:
-                getError(jobid, job);
-                return true;
-            case CANCELLED:
-                job.set_cancelled();
-                return true;
-            default:
-                job.complete(new SimulationFailure(
-                        job.input, false,
-                        "Abnormal job status " + st, getLog(jobid)));
-                return true;
-            }
+            completeJob(jobid, st, job);
         default:
             throw new HttpException(resp.statusCode(), resp.body());    
         }
@@ -199,19 +215,7 @@ public class IntensRunner implements SimulationRunner {
         IntensJob job = jobs.remove(arg.job);
         if (job != null) {
             try {
-                switch (arg.status) {
-                case DONE:
-                    getResults(arg.job, job);
-                    break;
-                case FAILED:
-                    getError(arg.job, job);
-                    break;
-                case CANCELLED:
-                    job.set_cancelled();
-                    break;
-                default:
-                    getJobStatus(arg.job, job);
-                }
+                completeJob(arg.job, arg.status, job);
             } catch (InterruptedException e) {
                 error_jobs.put(arg.job, job);
                 Thread.currentThread().interrupt();
