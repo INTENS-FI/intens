@@ -21,7 +21,7 @@ def _get_vars(st, vtype=None, job=None):
         try:
             j = st.jobs[job]
         except KeyError as e:
-            raise wexc.NotFound() from e
+            raise wexc.NotFound from e
         if vt == Vtype.inputs:
             return j.inputs
         elif vt == Vtype.results:
@@ -31,9 +31,17 @@ def _get_vars(st, vtype=None, job=None):
 
 @get_vars.route('/')
 def get_all_vars(vtype, job):
-    with db.transact() as conn:
-        vars = _get_vars(db.get_state(conn), vtype, job)
-        return jsonify(dict(vars))
+    values = request.args.get("values", type=util.boolstr)
+    only = request.args.get("only")
+    if only is not None:
+        only = [vn.strip() for vn in only.split(",")]
+    try:
+        with db.transact() as conn:
+            vars = _get_vars(db.get_state(conn), vtype, job)
+            return jsonify({k: vars[k] for k in only} if only
+                           else dict(vars) if values else list(vars))
+    except KeyError as e:
+        raise wexc.NotFound("No such variable: %s" % e) from e
 
 @get_vars.route('/<var>')
 def get_var(vtype, job, var):
@@ -42,7 +50,7 @@ def get_var(vtype, job, var):
             vars = _get_vars(db.get_state(conn), vtype, job)
             return jsonify(vars[var])
     except KeyError as e:
-        raise wexc.NotFound() from e
+        raise wexc.NotFound from e
 
 @set_vars.route('/', methods=['PUT'])
 def set_all_vars():
@@ -70,4 +78,4 @@ def set_var(var):
                 vars[var] = val
             return util.empty_response
     except KeyError as e:
-        raise wexc.NotFound() from e
+        raise wexc.NotFound from e

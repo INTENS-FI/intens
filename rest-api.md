@@ -8,8 +8,9 @@ Comment: This is a Multimarkdown document.
 
 ### `default/`
 
-- GET returns list of defined defaults (names only, maybe
-  `?values=true` to return also values).
+- GET returns the names of defined defaults as a list.  With
+  `?values=true` or `?only=v1,v2,...` it returns a JSON object with
+  names and values.  `only` restricts output to the listed variables).
 - PUT with an object replaces all defaults.
 
 #### `default/`*x*
