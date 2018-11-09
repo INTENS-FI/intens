@@ -10,19 +10,23 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 
 public class IntensManagerTest {
-    private Injector inj = Guice.createInjector(new IntensJacksonModule());
-
+    private Injector inj = Guice.createInjector(
+            new IntensJacksonModule());
+    
+    public InputStream getModelStream() {
+        return getClass().getResourceAsStream("/test_model.yaml");
+    }
+    
     @Test
     public void testParseModel() throws Exception {
-        IntensManager mgr = inj.getInstance(IntensManager.class);
+        var fac = inj.getInstance(IntensFactory.class);
         IntensModel mdl;
-        try (InputStream str = this.getClass().getResourceAsStream(
-                "/test_model.yaml")) {
-            mdl = mgr.parseModel(null, str);
+        try (var in = getModelStream()) {
+            mdl = fac.loadModel(in);
         }
-        mgr.modelOM.writeValue(System.out, mdl);
+        fac.mgr.modelOM.writeValue(System.out, mdl);
         assertSame("Model simulator manager not set correctly",
-                   mgr, mdl.getSimulatorManager());
+                   fac.mgr, mdl.getSimulatorManager());
         assertNotNull("Null defaults", mdl.getDefaults());
         assertNotNull("Null descriptions", mdl.descriptions);
     }
