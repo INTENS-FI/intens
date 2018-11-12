@@ -90,16 +90,16 @@ public class IntensRunner implements SimulationRunner {
         }
     }
 
-    private void getResults(int jobid, IntensJob job)
+    private void getResults(IntensJob job)
             throws IOException, InterruptedException {
-        var res = new SimulationResults(job.input, getLog(jobid));
+        var res = new SimulationResults(job.input, getLog(job.jobid));
         var ns = job.input.getNamespace();
         String only = ns.components.entrySet().stream()
                     .flatMap(kv -> kv.getValue().outputs.keySet().stream().map(
                                      op -> kv.getKey() + "." + op))
                     .collect(Collectors.joining(","));
         var uri = HttpUrl.get(model.uri)
-                .newBuilder("jobs/" + jobid + "/results/")
+                .newBuilder("jobs/" + job.jobid + "/results/")
                 .addQueryParameter("only", only).build();
         var req = new Request.Builder().url(uri).build();
         try (var resp = http.newCall(req).execute()) {
@@ -129,16 +129,17 @@ public class IntensRunner implements SimulationRunner {
         job.complete(res);
     }
 
-    private void getError(int jobid, IntensJob job)
+    private void getError(IntensJob job)
             throws IOException, InterruptedException {
-        var uri = HttpUrl.get(model.uri).resolve("jobs/" + jobid + "/error");
+        var uri = HttpUrl.get(model.uri).resolve(
+                "jobs/" + job.jobid + "/error");
         var req = new Request.Builder().url(uri).build();
         try (var resp = http.newCall(req).execute()) {
             if (resp.code() != HTTP_OK)
             throw new HttpException(resp.code(), resp.body().string());
             String msg = om.readValue(resp.body().charStream(), String.class);
             job.complete(new SimulationFailure(
-                    job.input, true, msg, getLog(jobid)));
+                    job.input, true, msg, getLog(job.jobid)));
         }
     }
 
@@ -146,10 +147,10 @@ public class IntensRunner implements SimulationRunner {
             throws IOException, InterruptedException {
         switch (st) {
         case DONE:
-            getResults(jobid, job);
+            getResults(job);
             return;
         case FAILED:
-            getError(jobid, job);
+            getError(job);
             return;
         case CANCELLED:
             job.set_cancelled();
