@@ -29,6 +29,7 @@ import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 
 public class IntensRunner implements SimulationRunner {
     private static Logger logger = LoggerFactory.getLogger(IntensRunner.class);
@@ -147,7 +148,16 @@ public class IntensRunner implements SimulationRunner {
             throws IOException, InterruptedException {
         switch (st) {
         case DONE:
-            getResults(job);
+            try {
+                getResults(job);
+            } catch (HttpException e) {
+                // This may get better by itself.  Assume nothing else will.
+                if (e.httpStatus == HTTP_UNAVAILABLE)
+                    throw e;
+                job.complete(new SimulationFailure(
+                        job.input, false, "HTTP status " + e.httpStatus,
+                        e.getMessage()));
+            }
             return;
         case FAILED:
             getError(job);
@@ -254,14 +264,14 @@ public class IntensRunner implements SimulationRunner {
     }
 
     static final MediaType json_mt = MediaType.parse("application/json");
-
+    
     public IntensJob start(SimulationInput input) throws IOException {
         Map<String, Object> binds = new HashMap<>();
         var ns = input.getNamespace();
         for (var comp_kv : ns.components.entrySet()) {
             var comp = comp_kv.getKey();
             for (var inp_kv : comp_kv.getValue().inputs.entrySet()) {
-                var inp = comp_kv.getKey();
+                var inp = inp_kv.getKey();
                 switch (inp_kv.getValue()) {
                 default:
                     throw new IOException(
@@ -278,8 +288,10 @@ public class IntensRunner implements SimulationRunner {
             }
         }
         var uri = HttpUrl.get(model.uri).resolve("jobs/");
-        var body = new FunctionalBody(json_mt,
-                                      out -> om.writeValue(out, binds));
+//        om.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
+//        var body = new FunctionalBody(json_mt,
+//                                      out -> om.writeValue(out, binds));
+        var body = RequestBody.create(json_mt, om.writeValueAsString(binds));
         var req = new Request.Builder().url(uri).post(body).build();
         try (var resp = http.newCall(req).execute()) {
             if (resp.code() != HTTP_CREATED)

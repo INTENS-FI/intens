@@ -30,7 +30,7 @@ public class HttpException extends IOException {
     public String getMessage() {
         var msg = super.getMessage();
         if (httpStatus != null)
-            msg += "\nHTTP status code: " + httpStatus;
+            msg += "\nHTTP status code: " + httpStatus + "\n";
         return msg;
     }
 }
