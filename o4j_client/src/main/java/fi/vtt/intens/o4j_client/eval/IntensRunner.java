@@ -1,15 +1,8 @@
 package fi.vtt.intens.o4j_client.eval;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URLEncoder;
-
 import static java.net.HttpURLConnection.*;
 
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,12 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.io.CharStreams;
-
 import eu.cityopt.sim.eval.SimulationFailure;
 import eu.cityopt.sim.eval.SimulationInput;
 import eu.cityopt.sim.eval.SimulationResults;
@@ -32,12 +22,15 @@ import eu.cityopt.sim.eval.SimulationRunner;
 import eu.cityopt.sim.eval.Type;
 import io.socket.client.IO;
 import io.socket.client.Socket;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 
 public class IntensRunner implements SimulationRunner {
     private static Logger logger = LoggerFactory.getLogger(IntensRunner.class);
     public final IntensModel model;
     public ObjectMapper om;
-    public HttpClient http;
+    public OkHttpClient http;
     private Socket sio;
     // Jobs that we are waiting for.
     private Map<Integer, IntensJob> jobs = new ConcurrentHashMap<>();
@@ -48,20 +41,21 @@ public class IntensRunner implements SimulationRunner {
     public String getLog(int jobid) throws IOException, InterruptedException {
         if (model.logFile == null)
            return null;
-        var uri = model.uri.resolve("jobs/" + jobid + "/files/")
+        var uri = HttpUrl.get(model.uri).resolve("jobs/" + jobid + "/files/")
                 .resolve(model.logFile);
-        var req = HttpRequest.newBuilder(uri).build();
-        var resp = http.send(req, BodyHandlers.ofString());
-        switch (resp.statusCode()) {
-        case HTTP_OK:
-            return resp.body();
-        case HTTP_NOT_FOUND:
-            return null;
-        default:
-            throw new HttpException(resp.statusCode(), resp.body());
+        var req = new Request.Builder().url(uri).build();
+        try (var resp = http.newCall(req).execute()) {
+            switch (resp.code()) {
+            case HTTP_OK:
+                return resp.body().string();
+            case HTTP_NOT_FOUND:
+                return null;
+            default:
+                throw new HttpException(resp.code(), resp.body().string());
+            }
         }
     }
-    
+
     /**
      * Attempt to parse a JsonNode as a sim-eval type.
      * @throws JsonParseException if json is of incompatible type
@@ -100,15 +94,15 @@ public class IntensRunner implements SimulationRunner {
                     .flatMap(kv -> kv.getValue().outputs.keySet().stream().map(
                                      op -> kv.getKey() + "." + op))
                     .collect(Collectors.joining(","));
-        var uri = model.uri.resolve("jobs/" + jobid + "/results/?only="
-                                    + URLEncoder.encode(only, "UTF-8"));
-        var req = HttpRequest.newBuilder(uri).build();
-        var resp = http.send(req, BodyHandlers.ofInputStream());
-        try (var body = new InputStreamReader(resp.body())) {
-            if (resp.statusCode() != HTTP_OK)
-                throw new HttpException(resp.statusCode(),
-                                        CharStreams.toString(body));
-            var root = (ObjectNode)om.readTree(body);
+        var uri = HttpUrl.get(model.uri)
+                .newBuilder("jobs/" + jobid + "/results/")
+                .addQueryParameter("only", only).build();
+        var req = new Request.Builder().url(uri).build();
+        try (var resp = http.newCall(req).execute()) {
+            if (resp.code() != HTTP_OK)
+                throw new HttpException(resp.code(),
+                                        resp.body().string());
+            var root = (ObjectNode)om.readTree(resp.body().charStream());
             for (var comp_kv : ns.components.entrySet()) {
                 String comp = comp_kv.getKey();
                 for (var out_kv : comp_kv.getValue().outputs.entrySet()) {
@@ -133,14 +127,15 @@ public class IntensRunner implements SimulationRunner {
 
     private void getError(int jobid, IntensJob job)
             throws IOException, InterruptedException {
-        URI err_uri = model.uri.resolve("jobs/" + jobid + "/error");
-        var req = HttpRequest.newBuilder(err_uri).build();
-        var resp = http.send(req, BodyHandlers.ofString());
-        if (resp.statusCode() != HTTP_OK)
-            throw new HttpException(resp.statusCode(),resp.body());
-        String msg = om.readValue(resp.body(), String.class);
-        job.complete(new SimulationFailure(
-                job.input, true, msg, getLog(jobid)));
+        var uri = HttpUrl.get(model.uri).resolve("jobs/" + jobid + "/error");
+        var req = new Request.Builder().url(uri).build();
+        try (var resp = http.newCall(req).execute()) {
+            if (resp.code() != HTTP_OK)
+            throw new HttpException(resp.code(), resp.body().string());
+            String msg = om.readValue(resp.body().charStream(), String.class);
+            job.complete(new SimulationFailure(
+                    job.input, true, msg, getLog(jobid)));
+        }
     }
 
     private void completeJob(int jobid, JobStatus st, IntensJob job)
@@ -177,25 +172,29 @@ public class IntensRunner implements SimulationRunner {
      */
     public boolean getJobStatus(int jobid, IntensJob job)
             throws IOException, InterruptedException {
-        URI job_uri = model.uri.resolve("jobs/" + jobid + "/");
-        var req = HttpRequest.newBuilder(job_uri).build();
+        var job_uri = HttpUrl.get(model.uri).resolve("jobs/" + jobid + "/");
+        var req = new Request.Builder().url(job_uri).build();
         if (job.isDone())
             return true;
-        var resp = http.send(req, BodyHandlers.ofString());
-        switch (resp.statusCode()) {
-        case HTTP_NOT_FOUND:
-            job.complete(new SimulationFailure(
-                    job.input, false, "Deleted from server", resp.body()));
-            return true;
-        case HTTP_OK:
-            var st = om.readValue(resp.body(), JobStatus.class);
-            if (st.isActive()) {
-                jobs.put(jobid, job);
-                return false;
+        try (var resp = http.newCall(req).execute()) {
+            switch (resp.code()) {
+            case HTTP_NOT_FOUND:
+                job.complete(new SimulationFailure(
+                        job.input, false, "Deleted from server",
+                        resp.body().string()));
+                return true;
+            case HTTP_OK:
+                var st = om.readValue(resp.body().charStream(),
+                                      JobStatus.class);
+                if (st.isActive()) {
+                    jobs.put(jobid, job);
+                    return false;
+                }
+                completeJob(jobid, st, job);
+                return true;
+            default:
+                throw new HttpException(resp.code(), resp.body().string());    
             }
-            completeJob(jobid, st, job);
-        default:
-            throw new HttpException(resp.statusCode(), resp.body());    
         }
     }
     
@@ -232,8 +231,10 @@ public class IntensRunner implements SimulationRunner {
     public IntensRunner(IntensModel model) {
         this.model = model;
         om = model.getSimulatorManager().protocolOM;
-        http = HttpClient.newBuilder().build();
-        sio = IO.socket(model.uri);
+        http = new OkHttpClient();
+        var opts = new IO.Options();
+        opts.callFactory = http;
+        sio = IO.socket(model.uri, opts);
         sio.on("terminated", this::on_terminated);
         sio.connect();
     }
