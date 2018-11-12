@@ -9,7 +9,6 @@ import javax.inject.Named;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.JacksonYAMLParseException;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 
 import eu.cityopt.sim.eval.AlienModelException;

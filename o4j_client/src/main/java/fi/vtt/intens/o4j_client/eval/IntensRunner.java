@@ -1,8 +1,10 @@
 package fi.vtt.intens.o4j_client.eval;
 
 import java.io.IOException;
+
 import static java.net.HttpURLConnection.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,6 +17,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import eu.cityopt.sim.eval.SimulationFailure;
 import eu.cityopt.sim.eval.SimulationInput;
 import eu.cityopt.sim.eval.SimulationResults;
@@ -23,6 +26,7 @@ import eu.cityopt.sim.eval.Type;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import okhttp3.HttpUrl;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 
@@ -248,8 +252,41 @@ public class IntensRunner implements SimulationRunner {
         }
     }
 
+    static final MediaType json_mt = MediaType.parse("application/json");
+
     public IntensJob start(SimulationInput input) throws IOException {
-        // TODO Auto-generated method stub
-        return null;
+        Map<String, Object> binds = new HashMap<>();
+        var ns = input.getNamespace();
+        for (var comp_kv : ns.components.entrySet()) {
+            var comp = comp_kv.getKey();
+            for (var inp_kv : comp_kv.getValue().inputs.entrySet()) {
+                var inp = comp_kv.getKey();
+                switch (inp_kv.getValue()) {
+                default:
+                    throw new IOException(
+                            "Unsupported type " + inp_kv.getValue());
+                case DOUBLE:
+                case TIMESTAMP:
+                case INTEGER:
+                case STRING:
+                case LIST_OF_DOUBLE:
+                case LIST_OF_INTEGER:
+                case LIST_OF_TIMESTAMP:
+                    binds.put(comp + "." + inp, input.get(comp, inp));
+                }
+            }
+        }
+        var uri = HttpUrl.get(model.uri).resolve("jobs/");
+        var body = new FunctionalBody(json_mt,
+                                      out -> om.writeValue(out, binds));
+        var req = new Request.Builder().url(uri).post(body).build();
+        try (var resp = http.newCall(req).execute()) {
+            if (resp.code() != HTTP_CREATED)
+                throw new HttpException(resp.code(), resp.body().string());
+            int jobid = om.readValue(resp.body().string(), Integer.class);
+            var job = new IntensJob(jobid, input);
+            jobs.put(jobid, job);
+            return job;
+        }
     }
 }
