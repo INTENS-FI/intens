@@ -83,6 +83,7 @@ class TaskFlask(db.DBFlask):
         if conn is None:
             with s.transact("flush_updates") as conn:
                 return s.flush_updates(conn)
+        s.logger.debug("Flusing about %s updates", s.updates.qsize())
         while True:
             try:
                 upd = s.updates.get_nowait()
@@ -145,6 +146,7 @@ class TaskFlask(db.DBFlask):
                 s.logger.debug("Job %s done", jid)
                 job.status = db.Job_status.DONE
         s.updates.put(save_job)
+        s.logger.debug("Task %s done", jid)
 
     def launch(s, jid, job):
         """Launch a task.

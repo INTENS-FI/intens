@@ -20,7 +20,7 @@ import eu.cityopt.sim.eval.Type;
 
 /**
  * For these to work the simsvc server must be running at the url
- * given in test_model.yaml. 
+ * given in test_model.yaml.
  * @author ttekth
  *
  */
@@ -32,7 +32,7 @@ public class IntensRunnerTest extends TestBase {
     private IntensModel model;
     private Namespace ns;
     private IntensRunner runner;
-    
+
     @Before
     public void setup() throws Exception {
         fac = inj.getInstance(IntensFactory.class);
@@ -43,7 +43,7 @@ public class IntensRunnerTest extends TestBase {
                 model.getDefaults().timeOrigin);
         runner = fac.mgr.makeRunner(model, ns);
     }
-    
+
     @After
     public void teardown() throws Exception {
         closeAll(runner, model, fac);
@@ -68,10 +68,11 @@ public class IntensRunnerTest extends TestBase {
         if (out instanceof SimulationResults) {
             var res = (SimulationResults)out;
             logger.info("Success, sum = " + res.getString("c", "sum"));
+            assertEquals(3, (int)res.get("c", "sum"));
         } else {
             var f = (SimulationFailure)out;
             fail((f.permanent ? "Permanent" :  "Temporary")
-                 + " failure: " + f.reason); 
+                 + " failure: " + f.reason);
         }
     }
 }
