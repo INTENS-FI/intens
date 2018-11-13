@@ -10,7 +10,8 @@ Comment: This is a Multimarkdown document.
 
 - GET returns the names of defined defaults as a list.  With
   `?values=true` or `?only=v1,v2,...` it returns a JSON object with
-  names and values.  `only` restricts output to the listed variables).
+  names and values.  `only` restricts output to the listed variables,
+  which must all exist, otherwise `404 Not found` results.
 - PUT with an object replaces all defaults.
 
 #### `default/`*x*
@@ -41,7 +42,7 @@ Comment: This is a Multimarkdown document.
 ##### `jobs/`*id*`/error`
 
 - Error details of failed simulations.  Only available if status is
-  failed.
+  failed.  A JSON string (quoted).
 
 ##### `jobs/`*id*`/results/`
 

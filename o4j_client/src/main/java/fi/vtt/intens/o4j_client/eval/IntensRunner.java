@@ -40,10 +40,10 @@ public class IntensRunner implements SimulationRunner {
     // Jobs that we are waiting for.
     private Map<Integer, IntensJob> jobs = new ConcurrentHashMap<>();
     
-    // Jobs that we have failed to retrieve results for.
+    // Terminated jobs for which result retrieval has failed.
     private Map<Integer, IntensJob> error_jobs = new ConcurrentHashMap<>();
 
-    public String getLog(int jobid) throws IOException, InterruptedException {
+    public String getLog(int jobid) throws IOException {
         if (model.logFile == null)
            return null;
         var uri = HttpUrl.get(model.uri).resolve("jobs/" + jobid + "/files/")
@@ -63,7 +63,7 @@ public class IntensRunner implements SimulationRunner {
 
     /**
      * Attempt to parse a JsonNode as a sim-eval type.
-     * @throws JsonParseException if json is of incompatible type
+     * @throws JsonProcessingException if json is of incompatible type
      * @throws IllegalArgumentException if elements of json are of incompatible
      *   type (when parsing a list) or if type is unsupported. 
      */
@@ -91,8 +91,14 @@ public class IntensRunner implements SimulationRunner {
         }
     }
 
-    private void getResults(IntensJob job)
-            throws IOException, InterruptedException {
+    /**
+     * Retrieve simulation results and complete job with them.
+     * Should only be called for successfully terminated simulations.
+     * @param job Job to fetch results for
+     * @throws HttpException on HTTP errors
+     * @throws IOException on other I/O errors, e.g., JSON parsing
+     */
+    private void getResults(IntensJob job) throws IOException {
         var res = new SimulationResults(job.input, getLog(job.jobid));
         var ns = job.input.getNamespace();
         String only = ns.components.entrySet().stream()
@@ -116,7 +122,8 @@ public class IntensRunner implements SimulationRunner {
                         qname = comp + "." + out;
                     var val = root.get(qname);
                     if (val == null)
-                        logger.error("Missing value from response: "+ qname);
+                        throw new IOException(
+                                "Missing value from response: "+ qname);
                     else
                         res.put(comp, out,
                                 parseResult(out_kv.getValue(), val));
@@ -130,70 +137,87 @@ public class IntensRunner implements SimulationRunner {
         job.complete(res);
     }
 
-    private void getError(IntensJob job)
-            throws IOException, InterruptedException {
+    /**
+     * Retrieve the error message of job and complete job with it.
+     * Should only be called for failed jobs.
+     */
+    private void getError(IntensJob job) throws IOException {
         var uri = HttpUrl.get(model.uri).resolve(
                 "jobs/" + job.jobid + "/error");
         var req = new Request.Builder().url(uri).build();
         try (var resp = http.newCall(req).execute()) {
             if (resp.code() != HTTP_OK)
-            throw new HttpException(resp.code(), resp.body().string());
+                throw new HttpException(resp.code(), resp.body().string());
             String msg = om.readValue(resp.body().charStream(), String.class);
             job.complete(new SimulationFailure(
                     job.input, true, msg, getLog(job.jobid)));
         }
     }
 
-    private void completeJob(int jobid, JobStatus st, IntensJob job)
-            throws IOException, InterruptedException {
-        switch (st) {
-        case DONE:
-            try {
+    /**
+     * Complete job according to st.
+     * To be called when the server indicates that job has terminated with
+     * status st.
+     * @throws IOException on possibly transient I/O errors
+     */
+    private void completeJob(JobStatus st, IntensJob job) throws IOException {
+        try {
+            switch (st) {
+            case DONE:
                 getResults(job);
-            } catch (HttpException e) {
-                // This may get better by itself.  Assume nothing else will.
-                if (e.httpStatus == HTTP_UNAVAILABLE)
-                    throw e;
+                return;
+            case FAILED:
+                getError(job);
+                return;
+            case CANCELLED:
+                job.set_cancelled();
+                return;
+            default:
                 job.complete(new SimulationFailure(
-                        job.input, false, "HTTP status " + e.httpStatus,
-                        e.getMessage()));
+                        job.input, false,
+                        "Abnormal job status " + st, getLog(job.jobid)));
+                return;
             }
-            return;
-        case FAILED:
-            getError(job);
-            return;
-        case CANCELLED:
-            job.set_cancelled();
-            return;
-        default:
+        } catch (HttpException e) {
+            // This may get better by itself.  Assume nothing else will.
+            if (e.httpStatus == HTTP_UNAVAILABLE)
+                throw e;
             job.complete(new SimulationFailure(
-                    job.input, false,
-                    "Abnormal job status " + st, getLog(jobid)));
-            return;
+                    job.input, true, "HTTP status " + e.httpStatus,
+                    e.getMessage()));
         }
     }
     
     /**
-     * Query the server for the status of job <code>jobid</code>.  If it has
-     * completed (successfully or not), complete <code>job</code> accordingly.
-     * Otherwise put <code>(jobid, job)</code> in the waiting map, to be
-     * updated when the server announces its termination over Socket.IO.
+     * Query the server for the status of job.  If active (not terminated)
+     * arrange job to be waited for and return false.  Otherwise complete job
+     * (with {@link #completeJob(JobStatus, IntensJob)}), remove it from
+     * waited jobs, and return true.  HTTP_NOT_FOUND (404) for the job
+     * status request completes the job as failure.  Other HTTP or I/O errors
+     * are thrown.  If an error occurs in the status request job will 
+     * continue to be waited for.  If an error occurs in completeJob, job
+     * will be added to error_jobs.
      * 
-     * Do nothing if <code>job</code> was already completed.
+     * Do nothing if job was already completed.
      * 
-     * @param jobid The job id on the server
      * @param job The {@link IntensJob} to update
      * @return whether job has completed.
+     * @throws HttpException on other HTTP errors than HTTP_NOT_FOUND
+     * @throws IOException on other I/O errors, e.g., from JSON processing.
      */
-    public boolean getJobStatus(int jobid, IntensJob job)
-            throws IOException, InterruptedException {
-        var job_uri = HttpUrl.get(model.uri).resolve("jobs/" + jobid + "/");
-        var req = new Request.Builder().url(job_uri).build();
-        if (job.isDone())
+    public boolean getJobStatus(IntensJob job) throws IOException {
+        if (job.isDone()) {
+            jobs.remove(job.jobid);
             return true;
+        } else {
+            jobs.put(job.jobid, job);
+        }
+        var uri = HttpUrl.get(model.uri).resolve("jobs/" + job.jobid);
+        var req = new Request.Builder().url(uri).build();
         try (var resp = http.newCall(req).execute()) {
             switch (resp.code()) {
             case HTTP_NOT_FOUND:
+                jobs.remove(job.jobid, job);
                 job.complete(new SimulationFailure(
                         job.input, false, "Deleted from server",
                         resp.body().string()));
@@ -201,11 +225,14 @@ public class IntensRunner implements SimulationRunner {
             case HTTP_OK:
                 var st = om.readValue(resp.body().charStream(),
                                       JobStatus.class);
-                if (st.isActive()) {
-                    jobs.put(jobid, job);
+                if (st.isActive())
                     return false;
+                jobs.remove(job.jobid);
+                try {
+                    completeJob(st, job);
+                } catch (IOException e) {
+                    error_jobs.put(job.jobid, job);
                 }
-                completeJob(jobid, st, job);
                 return true;
             default:
                 throw new HttpException(resp.code(), resp.body().string());    
@@ -218,7 +245,7 @@ public class IntensRunner implements SimulationRunner {
         public JobStatus status;
     }
 
-    public void on_terminated(Object... args) {
+    private void on_terminated(Object... args) {
         TerminatedData arg;
         try {
             arg = om.convertValue(args[0], TerminatedData.class);
@@ -229,12 +256,7 @@ public class IntensRunner implements SimulationRunner {
         IntensJob job = jobs.remove(arg.job);
         if (job != null) {
             try {
-                completeJob(arg.job, arg.status, job);
-            } catch (InterruptedException e) {
-                error_jobs.put(arg.job, job);
-                Thread.currentThread().interrupt();
-                logger.error(
-                        "on_terminated: interrupted on job " + arg.job, e);
+                completeJob(arg.status, job);
             } catch (IOException e) {
                 error_jobs.put(arg.job, job);
                 logger.error(
@@ -298,7 +320,7 @@ public class IntensRunner implements SimulationRunner {
                 throw new HttpException(resp.code(), resp.body().string());
             int jobid = om.readValue(resp.body().string(), Integer.class);
             var job = new IntensJob(jobid, input);
-            jobs.put(jobid, job);
+            getJobStatus(job);
             return job;
         }
     }
