@@ -17,23 +17,28 @@ public class TestBase {
 
     /**
      * Close all the Closeables.
-     * Nulls are ignored.  Otherwise all cs are closed in the order given,
-     * even if some throw.  The last exception is then rethrown, suppressing
-     * a preceding exception if any.
+     * Nulls are ignored.  All non-null cs are closed in the order given,
+     * even if some throw.  The last exception is then rethrown.  If multiple
+     * closings throw, each exception but the last is suppressed by the next.
+     * 
      * @throws IOException from the last close that threw
      */
-    public void closeAll(Closeable... cs) throws IOException {
-        IOException ex = null;
+    public static void closeAll(Closeable... cs) throws IOException {
+        Exception ex = null;
         for (var c : cs)
             if (c != null)
                 try {
                     c.close();
-                } catch (IOException e) {
+                } catch (RuntimeException | IOException e) {
                     if (ex != null)
                         e.addSuppressed(ex);
                     ex = e;
                 }
-        if (ex != null)
-            throw ex;
+        if (ex != null) {
+            if (ex instanceof IOException)
+                throw (IOException)ex;
+            else
+                throw (RuntimeException)ex;
+        }
     }
 }
