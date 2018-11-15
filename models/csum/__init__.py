@@ -1,7 +1,11 @@
 """Another subprocess test model.
+
 Computes c.x + c.y (dotted names for Cityopt compatibility) with
 an external program using the only scripting language that we can trust
 to be available on every platform: Python.
+
+Some o4j_client unit tests require a server with this model at the URL
+specified in o4j_client/src/test/resources/test_model.yaml.
 """
 
 from concurrent.futures import CancelledError
