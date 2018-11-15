@@ -9,7 +9,12 @@ import okio.BufferedSink;
 
 /**
  * A functional wrapper around {@link RequestBody}.
+ * 
+ * @deprecated Currently broken.
+ * XXX This is a documented way for doing async posts with OkHttpClient.
+ *   And it does not work.
  */
+@Deprecated
 public class FunctionalBody extends RequestBody {
     public final MediaType mt;
     
@@ -17,19 +22,19 @@ public class FunctionalBody extends RequestBody {
     interface Writer {
         public void write(OutputStream str) throws IOException;
     }
-    public final FunctionalBody.Writer writer;
+    public final Writer writer;
 
     /**
      * @param mt Media type of the body
      * @param writer Produces the body (by writing into an OutputStream).
      */
-    public FunctionalBody(MediaType mt, FunctionalBody.Writer writer) {
+    public FunctionalBody(MediaType mt, Writer writer) {
         this.mt = mt;
         this.writer = writer;
     }
 
     @Override
-    public MediaType contentType() {return IntensRunner.json_mt;}
+    public MediaType contentType() {return mt;}
     
     @Override
     public void writeTo(BufferedSink sink) throws IOException {
