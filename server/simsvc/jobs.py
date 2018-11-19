@@ -32,6 +32,7 @@ def get_job(job):
 
 @jobs_bp.route('/', methods=['POST'])
 def post_job():
+    current_app.logger.debug("post_job: %s", request.data)
     req = request.get_json()
     if not isinstance(req, dict):
         raise wexc.UnsupportedMediaType("Not a JSON object")

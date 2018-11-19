@@ -54,6 +54,7 @@ class TaskFlask(db.DBFlask):
         """
         super().__init__(*args, **kws)
         s.tasks = {}
+        s.gathers = {}
         s.updates = queue.Queue()
         s.monitor = None
 
@@ -83,11 +84,18 @@ class TaskFlask(db.DBFlask):
         if conn is None:
             with s.transact("flush_updates") as conn:
                 return s.flush_updates(conn)
-        s.logger.debug("Flusing about %s updates", s.updates.qsize())
+        gat = s.gathers
+        s.gathers = {}
+        s.logger.debug("Gathering %s futures", len(gat))
+        s.client.gather(gat)
+        s.logger.debug("Flushing approximately %s updates", s.updates.qsize())
         while True:
             try:
                 upd = s.updates.get_nowait()
-                upd(conn)
+                if isinstance(upd, (list, tuple)):
+                    upd[0](conn, *upd[1:])
+                else:
+                    upd(conn)
             except queue.Empty:
                 break
             except:
@@ -145,6 +153,7 @@ class TaskFlask(db.DBFlask):
             else:
                 s.logger.debug("Job %s done", jid)
                 job.status = db.Job_status.DONE
+        s.gathers[jid] = fut
         s.updates.put(save_job)
         s.logger.debug("Task %s done", jid)
 
@@ -180,12 +189,12 @@ class TaskFlask(db.DBFlask):
             return False
         fut, canc = ent
         if delete:
+            def del_job(conn):
+                s.logger.debug("Deleting job %s on cancel", jid)
+                jobs = db.get_state(conn).jobs
+                if jobs[jid].close():
+                    del jobs[jid]
             def del_on_cancel(fut):
-                def del_job(conn):
-                    s.logger.debug("Deleting job %s on cancel", jid)
-                    jobs = db.get_state(conn).jobs
-                    if jobs[jid].close():
-                        del jobs[jid]
                 if fut.cancelled():
                     s.updates.put(del_job)
             fut.add_done_callback(del_on_cancel)
