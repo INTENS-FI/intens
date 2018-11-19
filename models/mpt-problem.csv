@@ -1,0 +1,26 @@
+kind,component,name,type,value,unit,lower,upper,expression
+in,c,w,List of Double,,,,,"[w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11,w12,w13,w14,w15,w16,w17,w18,w19,w20]"
+out,c,er,Double,,,,,
+out,c,var,Double,,,,,
+dv,,w1,Double,,,-1,2,
+dv,,w2,Double,,,-1,2,
+dv,,w3,Double,,,-1,2,
+dv,,w4,Double,,,-1,2,
+dv,,w5,Double,,,-1,2,
+dv,,w6,Double,,,-1,2,
+dv,,w7,Double,,,-1,2,
+dv,,w8,Double,,,-1,2,
+dv,,w9,Double,,,-1,2,
+dv,,w10,Double,,,-1,2,
+dv,,w11,Double,,,-1,2,
+dv,,w12,Double,,,-1,2,
+dv,,w13,Double,,,-1,2,
+dv,,w14,Double,,,-1,2,
+dv,,w15,Double,,,-1,2,
+dv,,w16,Double,,,-1,2,
+dv,,w17,Double,,,-1,2,
+dv,,w18,Double,,,-1,2,
+dv,,w19,Double,,,-1,2,
+dv,,w20,Double,,,-1,2,
+obj,,er,max,,,,,c.er
+obj,,var,min,,,,,c.var

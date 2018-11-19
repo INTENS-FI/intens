@@ -1,0 +1,4 @@
+descriptions:
+  en: Toy model based on "modern" portfolio theory (Markowitz, 1952)
+url: http://localhost:8080
+simulatorName: models/mpt.py

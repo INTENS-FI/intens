@@ -1,0 +1,25 @@
+<configuration>
+  <module class="fi.vtt.intens.o4j_client.opt.SimsvcModule">
+    <property name="modelFile">/home/ttekth/src/intens/models/mpt-model.yaml</property>
+    <property name="problemFile">/home/ttekth/src/intens/models/mpt-problem.csv</property>
+    <property name="simulator"/>
+    <property name="timeOrigin">2010-01-01T00:00:00Z</property>
+    <property name="timeSeriesFile"/>
+  </module>
+  <module class="org.opt4j.core.common.completer.IndividualCompleterModule">
+    <property name="type">PARALLEL</property>
+    <property name="threads">16</property>
+  </module>
+  <module class="org.opt4j.optimizers.ea.EvolutionaryAlgorithmModule">
+    <property name="generations">1000</property>
+    <property name="alpha">100</property>
+    <property name="mu">25</property>
+    <property name="lambda">25</property>
+    <property name="crossoverRate">0.95</property>
+  </module>
+  <module class="org.opt4j.viewer.ViewerModule">
+    <property name="closeEvent">STOP</property>
+    <property name="closeOnStop">false</property>
+    <property name="title">Opt4J 3.1.4 Viewer</property>
+  </module>
+</configuration>
