@@ -19,12 +19,12 @@ import eu.cityopt.sim.eval.SimulationResults;
 import eu.cityopt.sim.eval.Type;
 
 /**
- * For these to work the simsvc server must be running at the url
- * given in test_model.yaml.
+ * For these to work a simsvc server for the csum model
+ * must be running at the url given in test_model.yaml.
  * @author ttekth
  *
  */
-//@Ignore("Simsvc server required")
+@Ignore("Simsvc server required")
 public class IntensRunnerTest extends TestBase {
     private static Logger
         logger = LoggerFactory.getLogger(IntensRunnerTest.class);
