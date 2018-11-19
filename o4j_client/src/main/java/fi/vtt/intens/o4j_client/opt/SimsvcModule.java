@@ -24,4 +24,12 @@ public class SimsvcModule extends CityoptFileModule {
         bind(ModelFactory.class).to(IntensFactory.class).in(SINGLETON);
         bindModelFile(Paths.get(modelFile));
     }
+
+    public String getModelFile() {
+        return modelFile;
+    }
+
+    public void setModelFile(String modelFile) {
+        this.modelFile = modelFile;
+    }
 }
