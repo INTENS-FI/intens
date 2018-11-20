@@ -1,9 +1,8 @@
 """Support for simulation monitoring with Socket.IO
 
-To use this, bind socketio to your Flask app with
-socketio.init_app(app).  Unfortunately flask_socketio does not have
-blueprints, which limits us to a single SocketIO instance (module
-variable) and thus a single Flask app.  Then configure the app to use
+To use this, create a SocketIO instance bound to your app with
+socketio = SocketIO(app) and route the default namespace with
+socketio.on_namespace(Simsvc_namespace()).  Then configure the app to use
 Monitor as its launch monitor.  Run the app with socketio.run(app) or
 see the Flask-SocketIO docs for other server options.
 """
@@ -17,7 +16,9 @@ def logger(app=None):
     return app.logger.getChild("sockio")
 
 class Simsvc_namespace(Namespace):
-    def on_connect():
+    """Default namespace handler for simsvc.
+    """
+    def on_connect(s):
         addr = request.remote_addr
         if addr is None:
             logger().error(
@@ -26,7 +27,7 @@ class Simsvc_namespace(Namespace):
         else:
             logger().info("Socket.IO: %s connected", addr)
 
-    def on_disconnect():
+    def on_disconnect(s):
         logger().info("Socket.IO: %s disconnected", request.remote_addr)
 
 class Monitor(object):
