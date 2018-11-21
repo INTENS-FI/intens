@@ -3,13 +3,13 @@
 - In this document Python names starting with a dot are
   relative to `simsvc`.
 - *Real threads* are threads provided by the Python standard library,
-  implemented using OS threads.  *Green threads" are coroutines
+  implemented using OS threads.  *Green threads* are coroutines
   provided by the Eventlet or Gevent library.  The APIs of these
   libraries are designed to resemble programming with real threads.
-  Real threads are usually pre-emptively scheduled and would execute
+  Real threads are usually preemptively scheduled and would execute
   concurrently were it not for the CPython global interpreter lock.
   Each real thread can host any number or green threads, which are
-  co-operatively scheduled within their real thread.
+  cooperatively scheduled within their real thread.
 - Green thread switching happens during calls to the Eventlet or
   Gevent library.  *Monkey patching* is a function provided by
   these libraries that modifies the Python standard library to
@@ -64,6 +64,11 @@
   know if monkey patching would turn those green.  We don't do that
   though, so we now have a queue (in `.sockio.Monitor`) where future
   callbacks post events for a background coroutine to emit.
+- To avoid having lots of small concurrent transactions, job results
+  are not saved by the task callback.  Saving is queued by the
+  callback for later execution by `.tasks.flush_updates`.  Deletion
+  of active jobs uses the same queue (a callback queues the deletion
+  when the task finishes).
 
 ## ZODB
 
