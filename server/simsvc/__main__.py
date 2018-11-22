@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 """A script for running the simsvc server.
 
 This always uses eventlet.wsgi, bypassing SocketIO.run because it does
