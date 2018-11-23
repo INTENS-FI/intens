@@ -1,0 +1,28 @@
+#!/bin/sh
+# Create a service principal with read access to an Azure container registry
+# and a Kubernetes secret for it.  Patch the default service account to use
+# the secret.  Also creates a JSON file with sp data, including
+# password (which is why we set umask 77).
+#
+# This allows ACR access for non-AKS clusters, e.g., Minikube.  With AKS
+# it suffices to assign a role to the cluster sp; no password needed.
+# https://docs.microsoft.com/en-us/azure/container-registry/container-registry-auth-aks
+
+# Registry name without .azurecr.io.
+crname=intens
+spname=${crname}-acr-sp
+
+set -e
+umask 77
+
+acr_id=`az acr show -n $crname --query id -o tsv`
+az ad sp create-for-rbac --name $spname --role Reader \
+    --scopes "$acr_id" > ${spname}.json
+spid=`jq -er .appId ${spname}.json`
+pw=`jq -er .password ${spname}.json`
+
+kubectl create secret docker-registry $spname \
+    --docker-server ${crname}.azurecr.io --docker-email Timo.Korvola@vtt.fi \
+    --docker-username "$spid" --docker-password "$pw"
+kubectl patch serviceaccount default -p \
+    '{"imagePullSecrets": [{"name": "'$spname'"}]}'
