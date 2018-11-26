@@ -1,8 +1,10 @@
 #!/bin/sh
 # Create a self-signed CA certificate and install as Kubernetes secret.
 # Create a cert-manager cluster issuer that uses the new certificate.
-# The private key and cert are also stored in local files.
+# The private key and certificate are also stored in local files.
 # There is no passphrase on the private key.
+# If the private key or the certificate file already exist, they are
+# not recreated.
 
 # Certificate subject
 subj="/CN=Intens/O=VTT"
@@ -14,9 +16,17 @@ ciname=intens-issuer
 set -e
 umask 77
 
-openssl genrsa -out ${sname}.key 2048
-openssl req -x509 -nodes -key ${sname}.key -out ${sname}.pem \
-    -reqexts v3_req -extensions v3_ca -subj "$subj"
+if [ -f ${sname}.key ]
+then echo Using existing private key.
+else openssl genrsa -out ${sname}.key 2048
+     rm ${sname}.pem
+fi
+
+if [ -f ${sname}.pem ]
+then echo Using existing certificate.
+else openssl req -x509 -nodes -key ${sname}.key \
+             -out ${sname}.pem -reqexts v3_req -extensions v3_ca -subj "$subj"
+fi
 
 kubectl create secret tls $sname --key ${sname}.key --cert ${sname}.pem
 
