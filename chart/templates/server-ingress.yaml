@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "simsvc.fullname" . }}-ingress
+  annotations:
+    certmanager.k8s.io/cluster-issuer: {{ .Values.server.clusterIssuer }}
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /{{ .Release.Name }}
+        backend:
+          serviceName: {{ template "simsvc.fullname" . }}-server
+          servicePort: 8080

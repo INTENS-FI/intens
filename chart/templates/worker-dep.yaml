@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "simsvc.fullname" . }}-worker
+  labels:
+    app: {{ template "simsvc.name" . }}
+    release: {{ .Release.Name | quote }}
+    component: worker
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  selector:
+    matchLabels:
+      app: {{ template "simsvc.name" . }}
+      release: {{ .Release.Name | quote }}
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: {{ template "simsvc.name" . }}
+        release: {{ .Release.Name | quote }}
+        component: worker
+    spec:
+      containers:
+        - name: {{ template "simsvc.fullname" . }}-worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - dask-worker
+            - {{ template "simsvc.fullname" . }}-scheduler:8786
+            - --nthreads
+            - {{ .Values.worker.threads | quote }}
+          tty: true

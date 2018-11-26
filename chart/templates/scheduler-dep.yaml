@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "simsvc.fullname" . }}-scheduler
+  labels:
+    app: {{ template "simsvc.name" . }}
+    release: {{ .Release.Name | quote }}
+    component: scheduler
+spec:
+  replicas: {{ .Values.scheduler.replicas }}
+  selector:
+    matchLabels:
+      app: {{ template "simsvc.name" . }}
+      release: {{ .Release.Name | quote }}
+      component: scheduler
+  template:
+    metadata:
+      labels:
+        app: {{ template "simsvc.name" . }}
+        release: {{ .Release.Name | quote }}
+        component: scheduler
+    spec:
+      containers:
+        - name: {{ template "simsvc.fullname" . }}-scheduler
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - dask-scheduler
+          ports:
+            - containerPort: 8786
+            - containerPort: 8787
+          tty: true

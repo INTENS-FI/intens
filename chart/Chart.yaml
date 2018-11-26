@@ -1,0 +1,7 @@
+apiVersion: v1
+name: simsvc
+version: 0.1.0
+description: A web simulation service based on Dask.
+maintainers:
+  - name: Timo Korvola
+    email: Timo.Korvola@vtt.fi

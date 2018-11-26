@@ -1,0 +1,15 @@
+image:
+  repository: intens.azurecr.io/simsvc-mpt
+  tag: latest
+  pullPolicy: IfNotPresent
+
+server:
+  replicas: 1
+  clusterIssuer: intens-issuer
+
+scheduler:
+  replicas: 1
+
+worker:
+  replicas: 4
+  threads: 4

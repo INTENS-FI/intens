@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "simsvc.fullname" . }}-scheduler
+spec:
+  selector:
+    app: {{ template "simsvc.name" . }}
+    release: {{ .Release.Name | quote }}
+    component: scheduler
+  ports:
+    - name: {{ template "simsvc.fullname" . }}-scheduler
+      port: 8786
+    - name: {{ template "simsvc.fullname" . }}-webui
+      port: 8787
