@@ -10,7 +10,7 @@ simsvc must be in PYTHONPATH.  Requires Numpy, Scipy and AIOHTTP
 (used here because it supports Unix domain sockets).
 """
 
-import logging
+import logging, argparse
 
 import asyncio, aiohttp
 from http import HTTPStatus
@@ -25,7 +25,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 astr = Config.SIMSVC_ADDR
-n = 20
 
 def gen_mean(n):
     return norm.rvs(size=n)
@@ -41,21 +40,30 @@ async def put(sess, base, name, val):
             logger.info("%s: HTTP status %s: %s",
                         name, res.status, await res.text())
 
-async def send(addr, af, mean, cov):
+async def send(mean, cov, addr=None, af=None, base_url=None):
     if af == AF.AF_UNIX:
         conn = aiohttp.UnixConnector(addr)
         def sessf(**kws):
             return aiohttp.ClientSession(connector=conn, **kws)
-        base = "http://localhost/"
+        base = "http://localhost/" if base_url is None else base_url
     else:
         sessf = aiohttp.ClientSession
-        base = "http://%s:%d/" % addr
+        base = "http://%s:%d/" % addr if base_url is None else base_url
     async with sessf(raise_for_status=True) as sess:
         await put(sess, base, "mean", mean)
         await put(sess, base, "cov", cov)
 
 if __name__ == '__main__':
+    p = argparse.ArgumentParser(
+        description="Initialize MPT covariance and mean")
+    p.add_argument('-n', metavar='N', type=int, default=20,
+                   help="portfolio size (default %(default)s)")
+    p.add_argument('url', nargs='?', default=None,
+                   help="Simsvc base URL")
+    args = p.parse_args()
     addr, af = addrstr(astr)
-    logger.info("Connecting to addr=%s, af=%s", addr, af)
+    if args.url is None or af == AF.AF_UNIX:
+        logger.info("Connecting to addr=%s, af=%s", addr, af)
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(send(addr, af, gen_mean(n), gen_cov(n)))
+    loop.run_until_complete(send(gen_mean(args.n), gen_cov(args.n),
+                                 addr, af, args.url))
