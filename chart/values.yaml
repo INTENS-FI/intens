@@ -13,3 +13,7 @@ scheduler:
 worker:
   replicas: 4
   threads: 4
+
+work:
+  storageClass: standard
+  size: 5Gi
