@@ -9,6 +9,3 @@ spec:
   resources:
     requests:
       storage: {{ .Values.work.size }}
-  selector:
-    matchLabels:
-      name: {{ template "simsvc.fullname" . }}-work

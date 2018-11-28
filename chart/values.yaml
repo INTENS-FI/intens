@@ -5,7 +5,7 @@ image:
 
 server:
   replicas: 1
-  host: intens.test
+  host: intens.northeurope.cloudapp.azure.com
   clusterIssuer: intens-issuer
   pwsecret: intens-pw
 
@@ -17,5 +17,5 @@ worker:
   threads: 4
 
 work:
-  storageClass: standard
+  storageClass: intens-work
   size: 5Gi
