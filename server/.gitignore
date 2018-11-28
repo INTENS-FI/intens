@@ -3,3 +3,4 @@ dist/
 /app.fs
 /app.fs.*
 __pycache__/
+Simsvc.egg-info/
