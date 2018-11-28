@@ -28,19 +28,32 @@ package).  Other arrangements are possible: the server just imports
 See `setup.py` for library requirements.  These are for the server;
 the test script `sio-client.py` also requires `socketIO-client`.
 
-Once a model has been provided, `run-server.py` starts the service,
+Once a model has been provided, `python3 -m simsvc` starts the service,
 running it on the Eventlet WSGI server.  Other WSGI servers can be used
 if they are supported by Flask-SocketIO.  The factory function for
 creating the WSGI app is `create_app` in `simsvc`.  See
 `simsvc.config` for options that can be set with environment
 variables.
 
-By default the server listens at `http://localhost:8080/`.  There is no
-authentication or any other attempt at security, so do not change it
-to listen actual network interfaces unless you are very well
-firewalled.  On a multi-user machine you may want to use a Unix domain
-socket instead, although that limits your server and client options.
-`run-server.py` supports Unix domain sockets but, e.g., Java doesn't.
+A Docker image for the service can be built by running `make` in the
+`server` directory.  See the `Makefile` for parameters.  Note that the
+wheel file name may need to be updated if `setup.py` is modified.  The
+image does not contain a model but is intended as a base: a runnable
+image can be built by adding a model, perhaps by using
+`models/Dockerfile`.  In cluster deployments the same image is
+intended to be used for the server, the Dask scheduler and workers.
+The default command runs the server, which in the absence of specific
+Dask configuration starts workers according to the number of cores
+available, thus providing the whole service in a single container.
+
+By default the server listens at `http://localhost:8080/` if executed
+outside Docker.  The Docker image listens at port 8080 on all
+interfaces of the container.  There is no authentication or any other
+attempt at security, so do not change it to listen actual network
+interfaces unless you are very well firewalled.  On a multi-user
+machine you may want to use a Unix domain socket instead, although
+that limits your server and client options.  The runnable simsvc
+package supports Unix domain sockets but, e.g., Java doesn't.
 Production deployments should be secured behind an ingress server,
 which handles SSL and authentication.
 
