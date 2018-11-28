@@ -21,11 +21,8 @@ then echo Using existing private key.
 else openssl genrsa -out ${sname}.key 2048
 fi
 
-if [ ${sname}.pem -nt ${sname}.key ]
-then echo Using existing certificate.
-else openssl req -x509 -nodes -key ${sname}.key \
-             -out ${sname}.pem -reqexts v3_req -extensions v3_ca -subj "$subj"
-fi
+openssl req -x509 -nodes -key ${sname}.key \
+        -out ${sname}.pem -reqexts v3_req -extensions v3_ca -subj "$subj"
 
 kubectl create secret tls $sname --key ${sname}.key --cert ${sname}.pem
 

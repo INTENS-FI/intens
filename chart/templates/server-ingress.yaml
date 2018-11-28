@@ -5,6 +5,9 @@ metadata:
   annotations:
     certmanager.k8s.io/cluster-issuer: {{ .Values.server.clusterIssuer }}
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: {{ .Values.server.pwsecret }}
+    nginx.ingress.kubernetes.io/auth-realm: {{ .Release.Name }}
 spec:
   rules:
   - host: {{ .Values.server.host }}
