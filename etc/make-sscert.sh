@@ -9,7 +9,7 @@
 # Certificate subject
 subj="/CN=Intens/O=VTT"
 # Name of the secret, also base name of generated files
-sname=intens-tls
+sname=intens-cacert
 # Name of the cluster issuer
 ciname=intens-issuer
 
@@ -19,10 +19,9 @@ umask 77
 if [ -f ${sname}.key ]
 then echo Using existing private key.
 else openssl genrsa -out ${sname}.key 2048
-     rm ${sname}.pem
 fi
 
-if [ -f ${sname}.pem ]
+if [ ${sname}.pem -nt ${sname}.key ]
 then echo Using existing certificate.
 else openssl req -x509 -nodes -key ${sname}.key \
              -out ${sname}.pem -reqexts v3_req -extensions v3_ca -subj "$subj"

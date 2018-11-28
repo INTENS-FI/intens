@@ -7,9 +7,14 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-  - http:
+  - host: {{ .Values.server.host }}
+    http:
       paths:
       - path: /{{ .Release.Name }}
         backend:
           serviceName: {{ template "simsvc.fullname" . }}-server
           servicePort: 8080
+  tls:
+  - hosts:
+    - {{ .Values.server.host }}
+    secretName: {{ .Values.server.host }}-cert

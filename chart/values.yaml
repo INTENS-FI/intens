@@ -5,6 +5,7 @@ image:
 
 server:
   replicas: 1
+  host: intens.test
   clusterIssuer: intens-issuer
 
 scheduler:
