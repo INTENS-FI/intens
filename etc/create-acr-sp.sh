@@ -11,6 +11,9 @@
 # This allows ACR access for non-AKS clusters, e.g., Minikube.  With AKS
 # it suffices to assign a role to the cluster sp; no password needed.
 # https://docs.microsoft.com/en-us/azure/container-registry/container-registry-auth-aks
+# However, currently that does not work with Virtual Kubelet.  Until that
+# is resolved, this script should serve as a workaround.
+# https://github.com/virtual-kubelet/virtual-kubelet/issues/192
 
 # Registry name without .azurecr.io.
 crname=intens
