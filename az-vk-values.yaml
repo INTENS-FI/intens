@@ -1,0 +1,9 @@
+worker:
+  tolerations:
+    - key: virtual-kubelet.io/provider
+      operator: Exists
+      effect: NoSchedule
+  nodeSelector:
+    kubernetes.io/role: agent
+    beta.kubernetes.io/os: linux
+    type: virtual-kubelet
