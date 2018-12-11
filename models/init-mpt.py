@@ -13,6 +13,8 @@ simsvc must be in PYTHONPATH.  Requires Numpy, Scipy and AIOHTTP
 import logging, argparse, ssl
 
 import asyncio, aiohttp
+from aiohttp.helpers import netrc_from_env
+from yarl import URL
 from http import HTTPStatus
 from socket import AddressFamily as AF
 
@@ -49,7 +51,12 @@ async def send(mean, cov, addr=None, af=None, base_url=None, ssl=None):
         base = "http://localhost/" if base_url is None else base_url
     else:
         base = "http://%s:%d/" % addr if base_url is None else base_url
-    async with aiohttp.ClientSession(raise_for_status=True, **kws) as sess:
+        netrc = netrc_from_env()
+        nca = netrc and netrc.authenticators(URL(base).host)
+        if nca is not None:
+            kws['auth'] = aiohttp.BasicAuth(nca[0], nca[-1])
+    async with aiohttp.ClientSession(raise_for_status=True, trust_env=True,
+                                     **kws) as sess:
         await put(sess, base, "mean", mean, ssl)
         await put(sess, base, "cov", cov, ssl)
 
