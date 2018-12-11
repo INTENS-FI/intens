@@ -3,6 +3,7 @@ package fi.vtt.intens.o4j_client.eval;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +34,7 @@ public class IntensModel implements SimulationModel {
     public String logFile;
     public Defaults defaults = new Defaults();
     public Duration nominalSimulationRuntime;
+    public Path cafile;
 
     IntensManager simulationManager;
 

@@ -8,3 +8,4 @@ defaults:
   simulationEnd: 2018-01-02T00:00:00Z
   timeOrigin: 2018-01-01T00:00:00Z
 nominalSimulationRuntime: PT1H
+cafile: ../etc/intens-cacert.pem

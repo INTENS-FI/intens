@@ -1,14 +1,24 @@
 package fi.vtt.intens.o4j_client.eval;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 
 import static java.net.HttpURLConnection.*;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -267,7 +277,34 @@ public class IntensRunner implements SimulationRunner {
     public IntensRunner(IntensModel model) {
         this.model = model;
         om = model.getSimulatorManager().protocolOM;
-        http = new OkHttpClient();
+        var bld = new OkHttpClient.Builder();
+        if (model.cafile != null) {
+            try (var ca = Files.newInputStream(model.cafile)) {
+                var ks = KeyStore.getInstance(KeyStore.getDefaultType());
+                ks.load(null, null);
+                for (var cert : CertificateFactory.getInstance("X.509")
+                        .generateCertificates(ca)) {
+                    var x509 = (X509Certificate)cert;
+                    ks.setCertificateEntry(
+                            x509.getSubjectDN().toString(), x509);
+                }
+                var tmf = TrustManagerFactory.getInstance(
+                        TrustManagerFactory.getDefaultAlgorithm());
+                tmf.init(ks);
+                var sslc = SSLContext.getInstance("TLS");
+                var tms = tmf.getTrustManagers();
+                if (tms.length != 1)
+                    throw new IllegalStateException(
+                            "No or multiple trust managers: "
+                            + Arrays.toString(tms));
+                sslc.init(null, tms, null);
+                bld = bld.sslSocketFactory(sslc.getSocketFactory(),
+                                           (X509TrustManager)tms[0]);
+            } catch (IOException | GeneralSecurityException e) {
+                throw new RuntimeException("SSL configuration error", e);
+            }
+        }
+        http = bld.build();
         var opts = new IO.Options();
         opts.callFactory = http;
         sio = IO.socket(model.uri, opts);
