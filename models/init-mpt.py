@@ -10,7 +10,7 @@ simsvc must be in PYTHONPATH.  Requires Numpy, Scipy and AIOHTTP
 (used here because it supports Unix domain sockets).
 """
 
-import logging, argparse
+import logging, argparse, ssl
 
 import asyncio, aiohttp
 from http import HTTPStatus
@@ -34,36 +34,42 @@ def gen_cov(n):
     s2 = norm.rvs(size=n) ** 2
     return (r * s2) @ r.T
 
-async def put(sess, base, name, val):
-    async with sess.put(base + "default/" + name, json=val.tolist()) as res:
+async def put(sess, base, name, val, ssl=None):
+    kws = {} if ssl is None else {'ssl': ssl}
+    async with sess.put(base + "default/" + name,
+                        json=val.tolist(), **kws) as res:
         if res.status != HTTPStatus.NO_CONTENT:
             logger.info("%s: HTTP status %s: %s",
                         name, res.status, await res.text())
 
-async def send(mean, cov, addr=None, af=None, base_url=None):
+async def send(mean, cov, addr=None, af=None, base_url=None, ssl=None):
+    kws = {}
     if af == AF.AF_UNIX:
-        conn = aiohttp.UnixConnector(addr)
-        def sessf(**kws):
-            return aiohttp.ClientSession(connector=conn, **kws)
+        kws['connector'] = aiohttp.UnixConnector(addr)
         base = "http://localhost/" if base_url is None else base_url
     else:
-        sessf = aiohttp.ClientSession
         base = "http://%s:%d/" % addr if base_url is None else base_url
-    async with sessf(raise_for_status=True) as sess:
-        await put(sess, base, "mean", mean)
-        await put(sess, base, "cov", cov)
+    async with aiohttp.ClientSession(raise_for_status=True, **kws) as sess:
+        await put(sess, base, "mean", mean, ssl)
+        await put(sess, base, "cov", cov, ssl)
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(
         description="Initialize MPT covariance and mean")
     p.add_argument('-n', metavar='N', type=int, default=20,
                    help="portfolio size (default %(default)s)")
+    p.add_argument('-c', '--cafile', default=None,
+                   help="Root CA bundle for SSL verification")
+    p.add_argument('-t', '--trust', action='store_true',
+                   help="Disable SSL certificate verification")
     p.add_argument('url', nargs='?', default=None,
                    help="Simsvc base URL")
     args = p.parse_args()
     addr, af = addrstr(astr)
     if args.url is None or af == AF.AF_UNIX:
         logger.info("Connecting to addr=%s, af=%s", addr, af)
+    sslc = False if args.trust else ssl.create_default_context(
+        cafile=args.cafile)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(send(gen_mean(args.n), gen_cov(args.n),
-                                 addr, af, args.url))
+                                 addr, af, args.url, sslc))
