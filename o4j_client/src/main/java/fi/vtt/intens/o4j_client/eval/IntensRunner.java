@@ -279,6 +279,8 @@ public class IntensRunner implements SimulationRunner {
         om = model.getSimulatorManager().protocolOM;
         var bld = new OkHttpClient.Builder();
         if (model.cafile != null) {
+            /* All this to read trusted CA certs from a file!
+               API from hell. */
             try (var ca = Files.newInputStream(model.cafile)) {
                 var ks = KeyStore.getInstance(KeyStore.getDefaultType());
                 ks.load(null, null);
@@ -304,9 +306,13 @@ public class IntensRunner implements SimulationRunner {
                 throw new RuntimeException("SSL configuration error", e);
             }
         }
+        if (model.auth != null) {
+            bld = bld.authenticator(model.auth);
+        }
         http = bld.build();
         var opts = new IO.Options();
         opts.callFactory = http;
+        opts.webSocketFactory = http;
         sio = IO.socket(model.uri, opts);
         sio.on("terminated", this::on_terminated);
         sio.connect();

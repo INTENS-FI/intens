@@ -15,10 +15,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import eu.cityopt.sim.eval.Namespace;
 import eu.cityopt.sim.eval.SimulationInput;
 import eu.cityopt.sim.eval.SimulationModel;
+import okhttp3.Authenticator;
 
 /**
  * A reference to a pre-deployed simsvc instance.
@@ -35,6 +39,9 @@ public class IntensModel implements SimulationModel {
     public Defaults defaults = new Defaults();
     public Duration nominalSimulationRuntime;
     public Path cafile;
+    @JsonTypeInfo(use=JsonTypeInfo.Id.NAME)
+    @JsonSubTypes({@Type(BasicAuthenticator.class)})
+    public Authenticator auth;
 
     IntensManager simulationManager;
 
