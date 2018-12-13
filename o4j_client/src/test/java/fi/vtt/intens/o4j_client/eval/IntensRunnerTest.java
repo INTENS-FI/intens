@@ -2,6 +2,8 @@ package fi.vtt.intens.o4j_client.eval;
 
 import static org.junit.Assert.*;
 
+import java.util.Arrays;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -62,7 +64,7 @@ public class IntensRunnerTest extends TestBase {
         in.put("c", "y", 2);
         logger.info("Launching job");
         IntensJob job = runner.start(in);
-        logger.info("Launched, id = " + job.jobid);
+        logger.info("Launched, id = {}", job.jobid);
         SimulationOutput out = job.get();
         logger.info("Log:\n" + out.getMessages() + "(EOF)\n");
         if (out instanceof SimulationResults) {
@@ -74,5 +76,11 @@ public class IntensRunnerTest extends TestBase {
             fail((f.permanent ? "Permanent" :  "Temporary")
                  + " failure: " + f.reason);
         }
+        var st = runner.getStatuses(Arrays.asList(job.jobid));
+        assertEquals("Wrong number of status entries returned",
+                     1, st.size());
+        assertEquals("Wrong status for our job " + job.jobid,
+                     JobStatus.DONE, st.get(job.jobid));
+
     }
 }

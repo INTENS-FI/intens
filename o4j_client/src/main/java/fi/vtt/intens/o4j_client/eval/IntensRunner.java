@@ -1,6 +1,7 @@
 package fi.vtt.intens.o4j_client.eval;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -10,6 +11,8 @@ import java.security.cert.X509Certificate;
 import static java.net.HttpURLConnection.*;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +26,7 @@ import javax.net.ssl.X509TrustManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -48,9 +52,84 @@ public class IntensRunner implements SimulationRunner {
     private Socket sio;
     // Jobs that we are waiting for.
     private Map<Integer, IntensJob> jobs = new ConcurrentHashMap<>();
-    
+
     // Terminated jobs for which result retrieval has failed.
     private Map<Integer, IntensJob> error_jobs = new ConcurrentHashMap<>();
+
+    /**
+     * Fetch statuses of given jobs from the server.
+     * @param jids Job ids to fetch, null for all
+     */
+    public Map<Integer, JobStatus> getStatuses(Collection<Integer> jids)
+            throws IOException {
+        if (jids.isEmpty())
+            return Collections.emptyMap();
+        String only = jids.stream()
+                .map(i -> i.toString())
+                .collect(Collectors.joining(","));
+        var url = HttpUrl.get(model.uri).newBuilder("jobs/")
+                .addQueryParameter("status", "true")
+                .addQueryParameter("only", only).build();
+        var req = new Request.Builder().url(url).build();
+        try (var resp = http.newCall(req).execute()) {
+            switch (resp.code()) {
+            case HTTP_OK:
+                Map<Integer, JobStatus> st = om.readValue(
+                        resp.body().charStream(),
+                        new TypeReference<Map<Integer, JobStatus>>() {});
+                for (int j : jids) {
+                    if (!st.containsKey(j)) {
+                        logger.warn("Job {} lost from server", j);
+                        st.put(j, JobStatus.INVALID);
+                    }
+                }
+                return st;
+            default:
+                throw new HttpException(resp);
+            }
+        }
+    }
+
+    private class UpdateThread extends Thread {
+        int period = 30000;
+
+        @Override
+        public void run() {
+            for (;;) {
+                try {
+                    sleep(period);
+                    var stats = getStatuses(jobs.keySet());
+                    for (var ent : stats.entrySet()) {
+                        IntensJob job;
+                        if (!ent.getValue().isActive()
+                            && (job = jobs.remove(ent.getKey())) != null) {
+                            logger.warn("Termination event lost on job {}",
+                                        ent.getKey());
+                            completeJob(ent.getValue(), job);
+                        }
+                    }
+                } catch (InterruptedException | InterruptedIOException e){
+                    currentThread().interrupt();
+                    return;
+                } catch (IOException e) {
+                    logger.warn("Error in periodic status update", e);
+                }
+            }
+        }
+    }
+    private Thread updateThread = null;
+
+    private synchronized void startUpdate() {
+        if (updateThread != null) {
+            if (updateThread.isAlive())
+                return;
+            else
+                logger.error("Periodic update thread has died");
+        }
+        updateThread = new UpdateThread();
+        updateThread.setDaemon(true);
+        updateThread.start();
+    }
 
     public String getLog(int jobid) throws IOException {
         if (model.logFile == null)
@@ -65,7 +144,7 @@ public class IntensRunner implements SimulationRunner {
             case HTTP_NOT_FOUND:
                 return null;
             default:
-                throw new HttpException(resp.code(), resp.body().string());
+                throw new HttpException(resp);
             }
         }
     }
@@ -74,7 +153,7 @@ public class IntensRunner implements SimulationRunner {
      * Attempt to parse a JsonNode as a sim-eval type.
      * @throws JsonProcessingException if json is of incompatible type
      * @throws IllegalArgumentException if elements of json are of incompatible
-     *   type (when parsing a list) or if type is unsupported. 
+     *   type (when parsing a list) or if type is unsupported.
      */
     private Object parseResult(Type type, JsonNode json)
             throws IOException {
@@ -120,8 +199,7 @@ public class IntensRunner implements SimulationRunner {
         var req = new Request.Builder().url(uri).build();
         try (var resp = http.newCall(req).execute()) {
             if (resp.code() != HTTP_OK)
-                throw new HttpException(resp.code(),
-                                        resp.body().string());
+                throw new HttpException(resp);
             var root = (ObjectNode)om.readTree(resp.body().charStream());
             for (var comp_kv : ns.components.entrySet()) {
                 String comp = comp_kv.getKey();
@@ -156,7 +234,7 @@ public class IntensRunner implements SimulationRunner {
         var req = new Request.Builder().url(uri).build();
         try (var resp = http.newCall(req).execute()) {
             if (resp.code() != HTTP_OK)
-                throw new HttpException(resp.code(), resp.body().string());
+                throw new HttpException(resp);
             String msg = om.readValue(resp.body().charStream(), String.class);
             job.complete(new SimulationFailure(
                     job.input, true, msg, getLog(job.jobid)));
@@ -196,25 +274,23 @@ public class IntensRunner implements SimulationRunner {
                     e.getMessage()));
         }
     }
-    
+
     /**
      * Query the server for the status of job.  If active (not terminated)
      * arrange job to be waited for and return false.  Otherwise complete job
      * (with {@link #completeJob(JobStatus, IntensJob)}), remove it from
      * waited jobs, and return true.  HTTP_NOT_FOUND (404) for the job
      * status request completes the job as failure.  Other HTTP or I/O errors
-     * are thrown.  If an error occurs in the status request job will 
-     * continue to be waited for.  If an error occurs in completeJob, job
+     * cause the job to be regarded active: false is returned and the
+     * job continues to be waited for.  If an error occurs in completeJob, job
      * will be added to error_jobs.
-     * 
+     *
      * Do nothing if job was already completed.
-     * 
+     *
      * @param job The {@link IntensJob} to update
      * @return whether job has completed.
-     * @throws HttpException on other HTTP errors than HTTP_NOT_FOUND
-     * @throws IOException on other I/O errors, e.g., from JSON processing.
      */
-    public boolean getJobStatus(IntensJob job) throws IOException {
+    public boolean getJobStatus(IntensJob job) {
         if (job.isDone()) {
             jobs.remove(job.jobid);
             return true;
@@ -244,11 +320,14 @@ public class IntensRunner implements SimulationRunner {
                 }
                 return true;
             default:
-                throw new HttpException(resp.code(), resp.body().string());    
+                throw new HttpException(resp);
             }
+        } catch (IOException e) {
+            logger.error("Error getting job status", e);
+            return false;
         }
     }
-    
+
     public static class TerminatedData {
         public int job;
         public JobStatus status;
@@ -273,7 +352,7 @@ public class IntensRunner implements SimulationRunner {
             }
         }
     }
-    
+
     public IntensRunner(IntensModel model) {
         this.model = model;
         om = model.getSimulatorManager().protocolOM;
@@ -318,7 +397,11 @@ public class IntensRunner implements SimulationRunner {
         sio.connect();
     }
 
+    @Override
     public synchronized void close() throws IOException {
+        if (updateThread != null && updateThread.isAlive()) {
+            updateThread.interrupt();
+        }
         if (sio.connected()) {
             sio.close();
         }
@@ -328,8 +411,10 @@ public class IntensRunner implements SimulationRunner {
     }
 
     static final MediaType json_mt = MediaType.parse("application/json");
-    
+
+    @Override
     public IntensJob start(SimulationInput input) throws IOException {
+        startUpdate();
         Map<String, Object> binds = new HashMap<>();
         var ns = input.getNamespace();
         for (var comp_kv : ns.components.entrySet()) {
@@ -359,7 +444,7 @@ public class IntensRunner implements SimulationRunner {
         var req = new Request.Builder().url(uri).post(body).build();
         try (var resp = http.newCall(req).execute()) {
             if (resp.code() != HTTP_CREATED)
-                throw new HttpException(resp.code(), resp.body().string());
+                throw new HttpException(resp);
             int jobid = om.readValue(resp.body().string(), Integer.class);
             var job = new IntensJob(jobid, input);
             getJobStatus(job);
