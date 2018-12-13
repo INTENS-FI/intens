@@ -22,7 +22,9 @@ Comment: This is a Multimarkdown document.
 ### `jobs/`
 
 - GET returns list of defined jobs (names only, `?status=true` to
-  return also statuses).
+  return also statuses).  `?only=id1,id2,...` restricts output to the
+  listed job ids.  It is not an error if some of the listed jobs do not exist:
+  such ids are simply omitted from the output.
 - POST defines a new job, returns `201 Created` with `Location` header
   and *id* in body.  Request content is input values.
 - DELETE deletes all jobs.

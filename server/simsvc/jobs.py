@@ -16,12 +16,22 @@ jobs_bp.before_request(tasks.flush_updates)
 @jobs_bp.route('/')
 def get_jobs():
     wstat = request.args.get("status", type=util.boolstr)
+    only = request.args.get("only")
     if wstat:
         tasks.refresh_jobs()
-    with db.transact() as conn:
-        st = db.get_state(conn)
-        return jsonify({k: j.status.name for k, j in st.jobs.items()}
-                       if wstat else list(st.jobs.keys()))
+    def gen_items():
+        with db.transact() as conn:
+            jobs = db.get_state(conn).jobs
+            if only is not None:
+                for ks in only.split(","):
+                    k = int(ks)
+                    j = jobs.get(k)
+                    if j is not None:
+                        yield k, j
+            else:
+                yield from jobs.items()
+    return jsonify({k: j.status.name for k, j in gen_items()}
+                   if wstat else [k for k, j in gen_items()])
 
 @jobs_bp.route('/<int:job>')
 def get_job(job):
