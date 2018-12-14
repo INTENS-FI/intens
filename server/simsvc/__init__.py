@@ -22,9 +22,7 @@ def create_app(**kws):
     app = TaskFlask(__name__)
     app.config.from_object(Config)
 
-    socketio = SocketIO(app, logger=sockio.logger(app), **kws)
-    socketio.on_namespace(sockio.Simsvc_namespace())
-    app.monitor = sockio.Monitor(app, socketio)
+    socketio = sockio.bind_socketio(app, **kws)
 
     app.register_blueprint(jobs.jobs_bp, url_prefix="/jobs")
     app.register_blueprint(vars.get_vars, url_prefix="/default",

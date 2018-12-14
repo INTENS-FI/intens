@@ -1,34 +1,31 @@
 """Support for simulation monitoring with Socket.IO
 
-To use this, create a SocketIO instance bound to your app with
-socketio = SocketIO(app) and route the default namespace with
-socketio.on_namespace(Simsvc_namespace()).  Then configure the app to use
-Monitor as its launch monitor.  Run the app with socketio.run(app) or
+To use this, create a TaskFlask app and call
+socketio = bind_socketio(app).  Run the app with socketio.run(app) or
 see the Flask-SocketIO docs for other server options.
 """
 
-from flask import current_app, request
-from flask_socketio import Namespace
-
-def logger(app=None):
-    if app is None:
-        app = current_app
-    return app.logger.getChild("sockio")
+from flask import request
+from flask_socketio import Namespace, SocketIO
 
 class Simsvc_namespace(Namespace):
     """Default namespace handler for simsvc.
     """
+    def __init__(s, logger):
+        super().__init__()
+        s.logger = logger
+
     def on_connect(s):
         addr = request.remote_addr
         if addr is None:
-            logger().error(
+            s.logger.error(
                 "Socket.IO: refusing connection from unknown address")
             return False
         else:
-            logger().info("Socket.IO: %s connected", addr)
+            s.logger.info("Socket.IO: %s connected", addr)
 
     def on_disconnect(s):
-        logger().info("Socket.IO: %s disconnected", request.remote_addr)
+        s.logger.info("Socket.IO: %s disconnected", request.remote_addr)
 
 class Monitor(object):
     """A monitor that sends events over Socket.IO.
@@ -69,3 +66,15 @@ class Monitor(object):
               else 'failed' if fut.exception()
               else 'done')
         s._emit('terminated', {'job': jid, 'status': st})
+
+def bind_socketio(app, **kws):
+    """Create and return a SocketIO instance bound to the Flask app.
+    Install appropriate event handlers and Monitor.  kws is passed to
+    the SocketIO constructor.
+    """
+    slog = app.logger.getChild("sockio") 
+    elog = slog.getChild("engineio")
+    sio = SocketIO(app, logger=slog, engineio_logger=elog, **kws)
+    sio.on_namespace(Simsvc_namespace(slog))
+    app.monitor = Monitor(app, sio)
+    return sio
