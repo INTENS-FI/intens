@@ -8,5 +8,5 @@ setup(
     packages=["simsvc"],
     python_requires=">= 3.6",
     install_requires=["Flask", "Flask-SocketIO", "ZODB", "eventlet", 
-                      "dask", "distributed >= 1.24.1", "tornado >= 5.1.1"],
+                      "dask", "distributed >= 1.25.0", "tornado >= 5.1.1"],
 )
