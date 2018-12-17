@@ -24,19 +24,21 @@ spec:
         - name: {{ template "simsvc.fullname" . }}-worker
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          volumeMounts:
-          - mountPath: "/work"
-            name: work
           args:
             - dask-worker
             - {{ template "simsvc.fullname" . }}-scheduler:8786
             - --nthreads
             - {{ .Values.worker.threads | quote }}
           tty: true
+      {{- if .Values.work.storageClass }}
+          volumeMounts:
+            - mountPath: "/work"
+              name: work
       volumes:
         - name: work
           persistentVolumeClaim:
             claimName: {{ template "simsvc.fullname" . }}-work
+      {{- end }}
       {{- if .Values.worker.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.worker.nodeSelector | indent 8 }}
