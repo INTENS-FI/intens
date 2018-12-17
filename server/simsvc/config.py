@@ -6,5 +6,7 @@ class Config(object):
     See .util.addrstr for the format.
     """
 
-    WORK_DIR = os.environ.get("WORK_DIR", ".")
-    """The parent of task work directories"""
+    WORK_DIR = os.environ.get("WORK_DIR", None)
+    """The parent of job work directories or false to disable
+    job work directories
+    """

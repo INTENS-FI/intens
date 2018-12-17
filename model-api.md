@@ -14,7 +14,8 @@ following attributes:
 :	A mapping of input parameter names to values
 
 `workdir`
-:	The absolute name of the task work directory.
+:	The absolute name of the task work directory or `None` if not
+    available
 
 `jobid`
 :   The id of the job in the database.  Tasks may use this for
@@ -28,15 +29,16 @@ something with a similar interface.
 
 The computation should regularly poll the `cancel` variable: if it
 becomes true the computation should cancel itself by raising
-`concurrent.futures.CancelledError`.  The directory `workdir` is
-shared between the computation and the server: the computation may
-create arbitrary files and subdirectories there, which can be
-immediately downloaded from the server (even while the task is
+`concurrent.futures.CancelledError`.  The directory `workdir`, unless
+`None`, is shared between the computation and the server: the
+computation may create arbitrary files and subdirectories there, which
+can be immediately downloaded from the server (even while the task is
 running).  `workdir` is retained until the job is deleted.  Tasks may
 only create files in `workdir` or temporary files managed with
 `tempfile` or equivalent in the usual location for the operating
-system (`dir=None` for `tempfile`) .  The latter may be faster but
-the files are then inaccessible outside the task.
+system (`dir=None` for `tempfile`).  The latter may be faster but the
+files are then inaccessible outside the task.  If `workdir` is `None`
+only temporary files may be created.
 
 We may standardise some of the contents of `workdir` later, e.g.,
 define names of log files.  Some such content may also be specified as

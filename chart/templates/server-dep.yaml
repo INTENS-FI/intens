@@ -24,13 +24,15 @@ spec:
         - name: {{ template "simsvc.fullname" . }}-server
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env:
-            - name: DASK_SCHEDULER_ADDRESS
-              value: {{ template "simsvc.fullname" . }}-scheduler:8786
           ports:
             - containerPort: 8080
           tty: true
+          env:
+            - name: DASK_SCHEDULER_ADDRESS
+              value: {{ template "simsvc.fullname" . }}-scheduler:8786
+            - name: WORK_DIR
       {{- if .Values.work.storageClass }}
+              value: "/work"
           volumeMounts:
             - mountPath: "/work"
               name: work
@@ -38,4 +40,6 @@ spec:
         - name: work
           persistentVolumeClaim:
             claimName: {{ template "simsvc.fullname" . }}-work
+      {{- else }}
+              value: ""
       {{- end }}

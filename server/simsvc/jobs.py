@@ -49,7 +49,8 @@ def post_job():
     with db.transact("post_job") as conn:
         jid, j = db.create_job(conn, req)
         try:
-            j.workdir = tempfile.mkdtemp(dir=current_app.config['WORK_DIR'])
+            wd = current_app.config['WORK_DIR']
+            j.workdir = tempfile.mkdtemp(dir=wd) if wd else None
             tasks.launch(jid, j)
         except:
             j.close()
@@ -117,6 +118,8 @@ def get_error(job):
 def get_workdir(job):
     with db.transact() as conn:
         wd = db.get_state(conn).jobs[job].workdir
+    if wd is None:
+        raise wexc.NotFound("Job has no work directory")
     return os.path.abspath(wd)
     
 @jobs_bp.route('/<int:job>/files/<path:fname>')
