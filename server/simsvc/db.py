@@ -9,7 +9,7 @@ from werkzeug.utils import cached_property
 from persistent import Persistent
 from BTrees.OOBTree import OOBTree, difference
 from BTrees.IOBTree import IOBTree
-import ZODB
+import ZODB, zodburi
 
 class DBFlask(flask.Flask):
     """A Flask app with a database association.
@@ -19,8 +19,12 @@ class DBFlask(flask.Flask):
         """ZODB connection pool.
         """
         import atexit
-        #TODO config
-        z = ZODB.DB("app.fs")
+        zuri = s.config.get('JOB_DB')
+        if zuri is None:
+            z = ZODB.DB("simsvc.fs")
+        else:
+            sf, kws = zodburi.resolve_uri(zuri)
+            z = ZODB.DB(sf, **kws)
         atexit.register(z.close)
         return z
 

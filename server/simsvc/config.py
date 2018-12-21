@@ -10,3 +10,8 @@ class Config(object):
     """The parent of job work directories or false to disable
     job work directories
     """
+
+    JOB_DB = os.environ.get("JOB_DB", None)
+    """The job database URL, parsed by zodburi.
+    The default is file storage simsvc.fs in the current directory.
+    """

@@ -3,7 +3,7 @@
 # It is intended as a base for runnable images that add a model.
 
 PYTHON=python3
-WHEEL=Simsvc-0.1-py3-none-any.whl
+WHEEL=Simsvc-0.2-py3-none-any.whl
 IMAGE=intens.azurecr.io/simsvc
 
 .PHONY: build
