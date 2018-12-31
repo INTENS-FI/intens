@@ -20,22 +20,21 @@ Comment: This is a Multimarkdown document.
 
 ## Docker images
 
+- Install Docker locally.
 - Create a container registry (ACR).  It gets a public IP and DNS
   name, thus needs to be globally unique (most names in Azure only
   need to be unique within their resource group).  Our charts
   etc. assume it is `intens.azurecr.io`.
 - Log in to ACR: `az acr login -n intens`.  Just the short name without
-  azurecr.io.
-- Install Docker locally.
-- Build the simsvc base image by running `make` in the server
+  `azurecr.io`.
+- Build the simsvc base image by running `make` in the `server`
   directory.  Sorry, only Linux supported for now.
 - Push to ACR (`docker push intens.azurecr.io/simsvc`).  This allows
   others to pull the image with `docker pull
   intens.azurecr.io/simsvc`, so they can build model images on it
   without having to build the base.
 - Build a model image, e.g., by running `docker build --build-arg
-  model=mpt.py -t intens.azurecr.io/simsvc-mpt .` in the models
-  directory.  Push to ACR.
+  model=mpt.py -t intens.azurecr.io/simsvc-mpt models`.  Push to ACR.
 
 ## Cluster setup
 
@@ -58,20 +57,20 @@ Comment: This is a Multimarkdown document.
   unique for the Azure region.  Here we assume that the FQDN is
   `intens.northeurope.cloudapp.azure.com`.  This and the ACR are the
   only public addresses in this whole setup.
-- For now we have been playing certificate authority for ourselves.  Set that
-  up with `etc/make-sscert.sh` or set up a better (ACME) cert-manager cluster
-  issuer.  Either name it `intens-issuer` os set
+- For now we have been playing certificate authority for ourselves.
+  Set it up with `etc/make-sscert.sh` or set up a better (ACME)
+  cert-manager cluster issuer.  Either name it `intens-issuer` os set
   `server.clusterIssuer` when installing the chart (ahead).
-- Clients use basic HTTP authentication.  Set that up with
+- Clients use basic HTTP authentication.  Set it up with
   `etc/make-htpasswd.sh`.  This creates a file with the password in
   plaintext (the htpasswd file only has a hash).  Copy the password
   to your `.netrc` (for the Python utilities) and model YAML files (for
   o4j_client).  The username is "intens".  Remember to use https to
   prevent password eavesdropping.
 - Set up dynamic provisioning of work volumes.  See
-  `storage-rbac.yaml` and the link therein.  Note that storage account
+  `aks/storage-rbac.yaml` and the link therein.  Note that storage account
   names must be globally unique.  Edit the storage account name in
-  `azure-sc.yaml` and apply with `kubectl`.
+  `aks/azure-sc.yaml` and apply with `kubectl`.
 - You should now be able to deploy Simsvc instances with `helm install
   -n name charts/simsvc`.  See `charts/simsvc/values.xml` for
   parameters.  The release name is also the leading path component of
