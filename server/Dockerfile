@@ -8,7 +8,7 @@
 FROM daskdev/dask:latest
 
 RUN conda install --yes flask flask-socketio \
-    && conda install --yes -c conda-forge zodb eventlet
+    && conda install --yes -c conda-forge zodb zodburi eventlet
 
 WORKDIR /tmp
 ARG simsvc_whl
