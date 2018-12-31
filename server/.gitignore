@@ -1,7 +1,7 @@
 /dist/
 /dask-worker-space/
-/app.fs
-/app.fs.*
+/simsvc.fs
+/simsvc.fs.*
 __pycache__/
 /Simsvc.egg-info/
 /build/
