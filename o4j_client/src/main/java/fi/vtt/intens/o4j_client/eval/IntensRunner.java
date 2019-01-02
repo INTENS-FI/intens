@@ -410,8 +410,18 @@ public class IntensRunner implements SimulationRunner {
         var opts = new IO.Options();
         opts.callFactory = http;
         opts.webSocketFactory = http;
-//        opts.transports = new String[] {"websocket"};
-        sio = IO.socket(model.uri, opts);
+//      opts.transports = new String[] {"websocket"};
+        /*XXX IO.socket treats the URI rather strangely:
+         * its path is interpreted as a Socket.IO namespace but
+         * connection is to uri.resolve(opts.path).  opts.path must begin
+         * with a slash (default /socket.io), thus the original URI path
+         * is removed from the connection URI.
+         *
+         * However, we want to connect to uri.resolve("socket.io"), i.e.,
+         * relative to the original path, root namespace.
+         */
+        opts.path = model.uri.resolve("socket.io").getRawPath();
+        sio = IO.socket(model.uri.resolve("/"), opts);
         sio.on("terminated", this::on_terminated);
         sio.on(Socket.EVENT_CONNECT, this::on_connect);
         sio.on(Socket.EVENT_ERROR, this::on_error);
