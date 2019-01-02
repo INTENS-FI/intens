@@ -333,6 +333,24 @@ public class IntensRunner implements SimulationRunner {
         public JobStatus status;
     }
 
+    private synchronized void on_connect(Object... args) {
+        notifyAll();
+    }
+
+    private void on_error(Object... args) {
+        if (args.length == 1 && args[0] instanceof Exception) {
+            logger.error("Socket.IO error", (Exception)args[0]);
+        } else {
+            logger.error("Socket.IO error: {}", Arrays.asList(args));
+        }
+    }
+
+    private synchronized void connect_sio() throws InterruptedException {
+        sio.connect();
+        while (!sio.connected())
+            wait();
+    }
+
     private void on_terminated(Object... args) {
         TerminatedData arg;
         try {
@@ -353,7 +371,7 @@ public class IntensRunner implements SimulationRunner {
         }
     }
 
-    public IntensRunner(IntensModel model) {
+    public IntensRunner(IntensModel model) throws IOException {
         this.model = model;
         om = model.getSimulatorManager().protocolOM;
         var bld = new OkHttpClient.Builder();
@@ -392,9 +410,18 @@ public class IntensRunner implements SimulationRunner {
         var opts = new IO.Options();
         opts.callFactory = http;
         opts.webSocketFactory = http;
+//        opts.transports = new String[] {"websocket"};
         sio = IO.socket(model.uri, opts);
         sio.on("terminated", this::on_terminated);
-        sio.connect();
+        sio.on(Socket.EVENT_CONNECT, this::on_connect);
+        sio.on(Socket.EVENT_ERROR, this::on_error);
+        sio.on(Socket.EVENT_CONNECT_ERROR, this::on_error);
+        try {
+            connect_sio();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Socket.IO connection interrupted", e);
+        }
     }
 
     @Override
