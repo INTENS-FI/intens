@@ -59,11 +59,11 @@ public class IntensRunner implements SimulationRunner {
     // Jobs that we are waiting for.
     private Map<Integer, IntensJob> jobs = new ConcurrentHashMap<>();
 
-    // Terminated jobs for which result retrieval has failed.
-    private Map<Integer, IntensJob> error_jobs = new ConcurrentHashMap<>();
-
     /**
      * Fetch statuses of given jobs from the server.
+     * It is possible that some jobs in jids are missing from the result
+     * if they were not found on the server.  This should not happen but
+     * sometimes does.
      * @param jids Job ids to fetch, null for all
      */
     public Map<Integer, JobStatus> getStatuses(Collection<Integer> jids)
@@ -85,8 +85,7 @@ public class IntensRunner implements SimulationRunner {
                         new TypeReference<Map<Integer, JobStatus>>() {});
                 for (int j : jids) {
                     if (!st.containsKey(j)) {
-                        logger.warn("Job {} lost from server", j);
-                        st.put(j, JobStatus.INVALID);
+                        logger.warn("Job {} missing from server response", j);
                     }
                 }
                 return st;
@@ -114,13 +113,23 @@ public class IntensRunner implements SimulationRunner {
                             completeJob(ent.getValue(), job);
                         }
                     }
-                } catch (InterruptedException | InterruptedIOException e){
+                } catch (InterruptedException e){
+                    logger.error("Periodic update thread interrupted", e);
                     currentThread().interrupt();
                     return;
                 } catch (IOException e) {
                     logger.warn("Error in periodic status update", e);
                 }
             }
+        }
+
+        private void excHandler(Throwable exc) {
+            logger.error("Periodic update thread died", exc);
+        }
+
+        public UpdateThread() {
+            super("IntensRunner.UpdateThread");
+            setUncaughtExceptionHandler((t, e) -> excHandler(e));
         }
     }
     private Thread updateThread = null;
@@ -130,7 +139,7 @@ public class IntensRunner implements SimulationRunner {
             if (updateThread.isAlive())
                 return;
             else
-                logger.error("Periodic update thread has died");
+                logger.warn("Restarting periodic update thread");
         }
         updateThread = new UpdateThread();
         updateThread.setDaemon(true);
@@ -294,9 +303,11 @@ public class IntensRunner implements SimulationRunner {
      * Do nothing if job was already completed.
      *
      * @param job The {@link IntensJob} to update
+     * @param allowMissing If job is not found on the server consider it
+     *   as still active (true) rather than failed (false).
      * @return whether job has completed.
      */
-    public boolean getJobStatus(IntensJob job) {
+    public boolean getJobStatus(IntensJob job, boolean allowMissing) {
         if (job.isDone()) {
             jobs.remove(job.jobid);
             return true;
@@ -308,6 +319,10 @@ public class IntensRunner implements SimulationRunner {
         try (var resp = http.newCall(req).execute()) {
             switch (resp.code()) {
             case HTTP_NOT_FOUND:
+                if (allowMissing) {
+                    logger.warn("Job {} not found on server", job.jobid);
+                    return false;
+                }
                 jobs.remove(job.jobid, job);
                 job.complete(new SimulationFailure(
                         job.input, false, "Deleted from server",
@@ -322,7 +337,7 @@ public class IntensRunner implements SimulationRunner {
                 try {
                     completeJob(st, job);
                 } catch (IOException e) {
-                    error_jobs.put(job.jobid, job);
+                    jobs.put(job.jobid, job);
                 }
                 return true;
             default:
@@ -358,13 +373,15 @@ public class IntensRunner implements SimulationRunner {
         notifyAll();
     }
 
-    private synchronized void connect_sio() throws IOException {
+    private synchronized void waitSioConnect() throws IOException {
         try {
-            sio.connect();
-            while (!sio.connected()) {
-                wait();
+            for (;;) {
                 if (sio == null)
                     throw new IOException("Socket.IO connection timed out");
+                else if (sio.connected())
+                    return;
+                logger.info("Waiting for Socket.IO connection");
+                wait();
             }
         } catch (InterruptedException e) {
             sio.close();
@@ -387,7 +404,7 @@ public class IntensRunner implements SimulationRunner {
             try {
                 completeJob(arg.status, job);
             } catch (IOException e) {
-                error_jobs.put(arg.job, job);
+                jobs.put(arg.job, job);
                 logger.error(
                         "on_terminated: IO exception on job " + arg.job, e);
             }
@@ -396,7 +413,8 @@ public class IntensRunner implements SimulationRunner {
 
     /**
      * Construct a runner for the given model and connect with Socket.IO.
-     * Waits for the Socket.IO connection to be established.
+     * Does not waits for the Socket.IO connection to be established.
+     * {@link #start(SimulationInput)} does that.
      * @param model Defines the Simsvc connection details.
      */
     public IntensRunner(IntensModel model) throws IOException {
@@ -455,7 +473,7 @@ public class IntensRunner implements SimulationRunner {
         sio.on(Socket.EVENT_ERROR, this::on_error);
         sio.on(Socket.EVENT_CONNECT_ERROR, this::on_error);
         sio.on(Socket.EVENT_CONNECT_TIMEOUT, this::on_timeout);
-        connect_sio();
+        sio.connect();
     }
 
     @Override
@@ -480,6 +498,7 @@ public class IntensRunner implements SimulationRunner {
     @Override
     public IntensJob start(SimulationInput input) throws IOException {
         startUpdate();
+        waitSioConnect();
         Map<String, Object> binds = new HashMap<>();
         var ns = input.getNamespace();
         for (var comp_kv : ns.components.entrySet()) {
@@ -512,7 +531,7 @@ public class IntensRunner implements SimulationRunner {
                 throw new HttpException(resp);
             int jobid = om.readValue(resp.body().string(), Integer.class);
             var job = new IntensJob(jobid, input);
-            getJobStatus(job);
+            getJobStatus(job, true);
             return job;
         }
     }
