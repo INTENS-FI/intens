@@ -44,6 +44,12 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 
+/**
+ * A SimulationRunner for Simsvc.
+ * Connects to a Simsvc instance and runs jobs there.
+ * @author ttekth
+ *
+ */
 public class IntensRunner implements SimulationRunner {
     private static Logger logger = LoggerFactory.getLogger(IntensRunner.class);
     public final IntensModel model;
@@ -345,10 +351,27 @@ public class IntensRunner implements SimulationRunner {
         }
     }
 
-    private synchronized void connect_sio() throws InterruptedException {
-        sio.connect();
-        while (!sio.connected())
-            wait();
+    private synchronized void on_timeout(Object... args) {
+        logger.error("Socket.IO timeout: {}", Arrays.asList(args));
+        sio.close();
+        sio = null;
+        notifyAll();
+    }
+
+    private synchronized void connect_sio() throws IOException {
+        try {
+            sio.connect();
+            while (!sio.connected()) {
+                wait();
+                if (sio == null)
+                    throw new IOException("Socket.IO connection timed out");
+            }
+        } catch (InterruptedException e) {
+            sio.close();
+            sio = null;
+            Thread.currentThread().interrupt();
+            throw new IOException("Socket.IO connection interrupted", e);
+        }
     }
 
     private void on_terminated(Object... args) {
@@ -371,6 +394,11 @@ public class IntensRunner implements SimulationRunner {
         }
     }
 
+    /**
+     * Construct a runner for the given model and connect with Socket.IO.
+     * Waits for the Socket.IO connection to be established.
+     * @param model Defines the Simsvc connection details.
+     */
     public IntensRunner(IntensModel model) throws IOException {
         this.model = model;
         om = model.getSimulatorManager().protocolOM;
@@ -390,17 +418,17 @@ public class IntensRunner implements SimulationRunner {
                 var tmf = TrustManagerFactory.getInstance(
                         TrustManagerFactory.getDefaultAlgorithm());
                 tmf.init(ks);
-                var sslc = SSLContext.getInstance("TLS");
                 var tms = tmf.getTrustManagers();
                 if (tms.length != 1)
                     throw new IllegalStateException(
                             "No or multiple trust managers: "
                             + Arrays.toString(tms));
+                var sslc = SSLContext.getInstance("TLS");
                 sslc.init(null, tms, null);
                 bld = bld.sslSocketFactory(sslc.getSocketFactory(),
                                            (X509TrustManager)tms[0]);
-            } catch (IOException | GeneralSecurityException e) {
-                throw new RuntimeException("SSL configuration error", e);
+            } catch (GeneralSecurityException e) {
+                throw new IOException("SSL configuration error", e);
             }
         }
         if (model.auth != null) {
@@ -426,24 +454,24 @@ public class IntensRunner implements SimulationRunner {
         sio.on(Socket.EVENT_CONNECT, this::on_connect);
         sio.on(Socket.EVENT_ERROR, this::on_error);
         sio.on(Socket.EVENT_CONNECT_ERROR, this::on_error);
-        try {
-            connect_sio();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Socket.IO connection interrupted", e);
-        }
+        sio.on(Socket.EVENT_CONNECT_TIMEOUT, this::on_timeout);
+        connect_sio();
     }
 
     @Override
     public synchronized void close() throws IOException {
+        if (!jobs.isEmpty()) {
+            logger.warn("Closing runner with " + jobs.size() + " active jobs");
+            for (var job : jobs.values()) {
+                job.cancel(true);
+            }
+        }
         if (updateThread != null && updateThread.isAlive()) {
             updateThread.interrupt();
         }
-        if (sio.connected()) {
+        if (sio != null) {
             sio.close();
-        }
-        if (!jobs.isEmpty()) {
-            logger.warn("Closing runner with " + jobs.size() + " active jobs");
+            sio = null;
         }
     }
 

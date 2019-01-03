@@ -27,7 +27,6 @@ public class IntensJob extends CompletableFuture<SimulationOutput>  {
      *   (false if it had already completed).
      */
     public boolean set_cancelled() {
-        // TODO Auto-generated method stub
         return super.cancel(false);
     }
 }
