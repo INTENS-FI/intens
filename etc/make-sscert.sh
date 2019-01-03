@@ -3,8 +3,7 @@
 # Create a cert-manager cluster issuer that uses the new certificate.
 # The private key and certificate are also stored in local files.
 # There is no passphrase on the private key.
-# If the private key or the certificate file already exist, they are
-# not recreated.
+# If the private key file already exists, it is not recreated.
 
 # Certificate subject
 subj="/CN=Intens/O=VTT"

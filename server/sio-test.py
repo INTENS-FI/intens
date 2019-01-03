@@ -19,8 +19,9 @@ if __name__ == '__main__':
                    help="Root CA bundle for SSL verification")
     p.add_argument('-t', '--trust', action='store_true',
                    help="Disable SSL certificate verification")
-    p.add_argument('url', nargs='?', default="http://localhost:8080",
-                   help="Simsvc base URL (default %(default)s)")
+    p.add_argument(
+        'url', nargs='?', default="http://localhost:8080",
+        help="Simsvc base URL (without trailing slash, default %(default)s)")
     args = p.parse_args()
     verify = False if args.trust else (args.cafile or True)
     with SocketIO(args.url, verify=verify) as sioc:

@@ -70,7 +70,7 @@ if __name__ == '__main__':
     p.add_argument('-t', '--trust', action='store_true',
                    help="Disable SSL certificate verification")
     p.add_argument('url', nargs='?', default=None,
-                   help="Simsvc base URL")
+                   help="Simsvc base URL (with slash in the end)")
     args = p.parse_args()
     addr, af = addrstr(astr)
     if args.url is None or af == AF.AF_UNIX:
