@@ -9,7 +9,8 @@ IMAGE=intens.azurecr.io/simsvc
 .PHONY: build
 
 build: dist/$(WHEEL)
-	docker build -t $(IMAGE) --build-arg simsvc_whl=$(WHEEL) .
+	docker build $(DOCKERFLAGS) -t $(IMAGE) \
+		--build-arg simsvc_whl=$(WHEEL) .
 
 dist/$(WHEEL): setup.py simsvc/*
 	$(PYTHON) setup.py bdist_wheel
