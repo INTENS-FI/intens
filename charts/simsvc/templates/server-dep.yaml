@@ -28,6 +28,8 @@ spec:
             - containerPort: 8080
           tty: true
           env:
+            # - name: FLASK_DEBUG
+            #   value: "1"
             - name: DASK_SCHEDULER_ADDRESS
               value: {{ template "simsvc.fullname" . }}-scheduler:8786
             - name: WORK_DIR

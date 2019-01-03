@@ -1,7 +1,8 @@
 image:
   repository: intens.azurecr.io/simsvc-mpt
   tag: latest
-  pullPolicy: IfNotPresent
+  # pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 server:
   replicas: 1

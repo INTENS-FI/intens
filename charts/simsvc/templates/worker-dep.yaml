@@ -30,6 +30,10 @@ spec:
             - --nthreads
             - {{ .Values.worker.threads | quote }}
           tty: true
+          # resources:
+          #   requests:
+          #     memory: 1G
+          #     cpu: 1
       {{- if .Values.work.storageClass }}
           volumeMounts:
             - mountPath: "/work"
