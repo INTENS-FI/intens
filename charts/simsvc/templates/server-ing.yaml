@@ -5,6 +5,8 @@ metadata:
   annotations:
     certmanager.k8s.io/cluster-issuer: {{ .Values.server.clusterIssuer }}
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-redirect-from: "~^http://[^/]+/(.*)"
+    nginx.ingress.kubernetes.io/proxy-redirect-to: "/{{ .Release.Name }}/$1"
     nginx.ingress.kubernetes.io/auth-type: basic
     nginx.ingress.kubernetes.io/auth-secret: {{ .Values.server.pwsecret }}
     nginx.ingress.kubernetes.io/auth-realm: {{ .Release.Name }}
@@ -13,7 +15,7 @@ spec:
   - host: {{ .Values.server.host }}
     http:
       paths:
-      - path: /{{ .Release.Name }}
+      - path: /{{ .Release.Name }}/
         backend:
           serviceName: {{ template "simsvc.fullname" . }}-server
           servicePort: 8080
