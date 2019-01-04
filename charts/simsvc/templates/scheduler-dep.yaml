@@ -30,3 +30,7 @@ spec:
             - containerPort: 8786
             - containerPort: 8787
           tty: true
+          # resources:
+          #   requests:
+          #     memory: 1G
+          #     cpu: 1
