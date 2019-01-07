@@ -17,6 +17,10 @@ worker:
   replicas: 4
   threads: 4
 
+db:
+  storageClass: intens-work
+  size: 5Gi
+
 work:
   storageClass: intens-work
   size: 5Gi

@@ -37,15 +37,25 @@ spec:
             - name: DASK_SCHEDULER_ADDRESS
               value: {{ template "simsvc.fullname" . }}-scheduler:8786
             - name: WORK_DIR
-      {{- if .Values.work.storageClass }}
-              value: "/work"
+              value: {{ if .Values.work.storageClass -}} "/work"
+              {{- else -}} "" {{- end }}
           volumeMounts:
+            {{- if .Values.work.storageClass }}
             - mountPath: "/work"
               name: work
+            {{- end }}
+            {{- if .Values.db.storageClass }}
+            - mountPath: "/db"
+              name: db
+            {{- end }}
       volumes:
+        {{- if .Values.work.storageClass }}
         - name: work
           persistentVolumeClaim:
             claimName: {{ template "simsvc.fullname" . }}-work
-      {{- else }}
-              value: ""
-      {{- end }}
+        {{- end }}
+        {{- if .Values.db.storageClass }}
+        - name: db
+          persistentVolumeClaim:
+            claimName: {{ template "simsvc.fullname" . }}-db
+        {{- end }}
