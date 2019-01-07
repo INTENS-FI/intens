@@ -24,7 +24,7 @@ class DBFlask(flask.Flask):
             z = ZODB.DB("simsvc.fs")
         else:
             sf, kws = zodburi.resolve_uri(zuri)
-            z = ZODB.DB(sf, **kws)
+            z = ZODB.DB(sf(), **kws)
         atexit.register(z.close)
         return z
 
