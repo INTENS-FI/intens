@@ -15,15 +15,13 @@ ARG simsvc_whl
 COPY dist/$simsvc_whl .
 RUN pip install $simsvc_whl && rm $simsvc_whl
 
-WORKDIR /work
-ENV SIMSVC_USER=nobody:nogroup
-RUN chown $SIMSVC_USER .
-ENV WORK_DIR=/work
-
 WORKDIR /run
-RUN chown $SIMSVC_USER .
-USER $SIMSVC_USER
 ARG port=8080
-ENV SIMSVC_ADDR=:$port
+ENV SIMSVC_USER=nobody:nogroup \
+    WORK_DIR=/work \
+    JOB_DB=file:///db/simsvc.fs \
+    SIMSVC_ADDR=:$port
+RUN mkdir -p /work /db && chown $SIMSVC_USER /work /db .
+USER $SIMSVC_USER
 CMD ["python3", "-m", "simsvc"]
 EXPOSE $port
