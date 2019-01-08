@@ -14,12 +14,12 @@ import okhttp3.Route;
  * Implements HTTP basic authentication for OkHttp3.
  * Based on an example in the library documentation.
  */
-@JsonTypeName("basic_auth")
+@JsonTypeName("BasicAuth")
 public class BasicAuthenticator implements Authenticator {
     public String username, password;
-    
+
     public BasicAuthenticator() {}
-    
+
     public BasicAuthenticator(String username, String password) {
         this.username = username;
         this.password = password;
