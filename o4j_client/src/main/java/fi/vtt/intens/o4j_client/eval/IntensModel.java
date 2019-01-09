@@ -27,7 +27,7 @@ import okhttp3.Authenticator;
 /**
  * A reference to a pre-deployed simsvc instance.
  * This is intended to be read from YAML with Jackson.
- * An url is required, most other parameters are optional. 
+ * An url is required, most other parameters are optional.
  */
 @JsonInclude(Include.NON_ABSENT)
 public class IntensModel implements SimulationModel {
@@ -39,43 +39,52 @@ public class IntensModel implements SimulationModel {
     public Defaults defaults = new Defaults();
     public Duration nominalSimulationRuntime;
     public Path cafile;
-    @JsonTypeInfo(use=JsonTypeInfo.Id.NAME)
+    @JsonTypeInfo(use=JsonTypeInfo.Id.NAME,
+                  defaultImpl=BasicAuthenticator.class)
     @JsonSubTypes({@Type(BasicAuthenticator.class)})
     public Authenticator auth;
 
     IntensManager simulationManager;
 
+    @Override
     public void close() throws IOException {}
 
+    @Override
     @JsonIgnore
     public IntensManager getSimulatorManager() {
         return simulationManager;
     }
 
+    @Override
     public String getSimulatorName() {
         return simulatorName;
     }
 
+    @Override
     public Defaults getDefaults() {
         return defaults;
     }
 
+    @Override
     public Duration getNominalSimulationRuntime() {
         return nominalSimulationRuntime;
     }
 
+    @Override
     @JsonIgnore
     public String getDescription(List<LanguageRange> priorityList) {
         Locale loc = Locale.lookup(priorityList, descriptions.keySet());
         return (loc != null) ? descriptions.get(loc) : null;
     }
 
+    @Override
     @JsonIgnore
     public byte[] getOverviewImageData() {
         // TODO Auto-generated method stub
         return null;
     }
 
+    @Override
     public SimulationInput findInputsAndOutputs(
             Namespace newNamespace, Map<String, Map<String, String>> units,
             int detailLevel, Writer warningWriter) throws IOException {

@@ -9,6 +9,6 @@ defaults:
   timeOrigin: 2018-01-01T00:00:00Z
 nominalSimulationRuntime: PT1H
 cafile: ../etc/intens-cacert.pem
-auth: !<BasicAuth>
+auth:
   username: intens
   password: 53cr37
