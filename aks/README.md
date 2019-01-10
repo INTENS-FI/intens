@@ -55,8 +55,7 @@ Comment: This is a Multimarkdown document.
   IP address in the cluster resource group (the one created by AKS)
   and choose Settings/Configuration.  The short domain name must be
   unique for the Azure region.  Here we assume that the FQDN is
-  `intens.northeurope.cloudapp.azure.com`.  This and the ACR are the
-  only public addresses in this whole setup.
+  `intens.westeurope.cloudapp.azure.com`.[^go west]
 - For now we have been playing certificate authority for ourselves.
   Set it up with `etc/make-sscert.sh` or set up a better (ACME)
   cert-manager cluster issuer.  Either name it `intens-issuer` os set
@@ -68,8 +67,10 @@ Comment: This is a Multimarkdown document.
   o4j_client).  The username is "intens".  Remember to use https to
   prevent password eavesdropping.
 - Set up dynamic provisioning of work volumes.  See
-  `aks/storage-rbac.yaml` and the link therein.  Note that storage account
-  names must be globally unique.  Edit the storage account name in
+  `aks/storage-rbac.yaml` and the link therein.  The storage account
+  name must be globally unique: its volumes should be available at
+  `//<account>.file.core.windows.net/<volume>`, but I haven't actually
+  managed to mount them.  Edit the storage account name in
   `aks/azure-sc.yaml` and apply with `kubectl`.
 - You should now be able to deploy Simsvc instances with `helm install
   -n name charts/simsvc`.  See `charts/simsvc/values.xml` for
@@ -80,3 +81,6 @@ Comment: This is a Multimarkdown document.
 
 [Arrange access]: https://docs.microsoft.com/en-us/azure/container-registry/container-registry-auth-aks
 [pubip]: https://docs.microsoft.com/en-us/azure/aks/ingress-tls
+[^go west]: Currently West Europe is a bit ahead of North Europe in
+    terms of Azure features: Virtual Nodes are in preview for AKS and
+    ACI has larger resource limits for Windows.

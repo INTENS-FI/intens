@@ -43,11 +43,6 @@ spec:
           persistentVolumeClaim:
             claimName: {{ template "simsvc.fullname" . }}-work
       {{- end }}
-      {{- if .Values.worker.nodeSelector }}
-      nodeSelector:
-{{ toYaml .Values.worker.nodeSelector | indent 8 }}
-      {{- end }}
-      {{- if .Values.worker.tolerations }}
-      tolerations:
-{{ toYaml .Values.worker.tolerations | indent 8 }}
+      {{- if .Values.worker.spec }}
+{{ toYaml .Values.worker.spec | indent 6 }}
       {{- end }}

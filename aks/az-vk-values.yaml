@@ -1,10 +1,19 @@
 # For deploying our chart on (Linux) Virtual kubelet
 worker:
-  tolerations:
+  spec:
+    tolerations:
     - key: virtual-kubelet.io/provider
       operator: Exists
       effect: NoSchedule
-  nodeSelector:
-    kubernetes.io/role: agent
-    beta.kubernetes.io/os: linux
-    type: virtual-kubelet
+    nodeSelector:
+      kubernetes.io/role: agent
+      beta.kubernetes.io/os: linux
+      type: virtual-kubelet
+    # See https://github.com/virtual-kubelet/virtual-kubelet/issues/456
+    # Needs Kubernetes 1.10 on the cluster.
+    dnsPolicy: ClusterFirst
+    dnsConfig:
+      searches:
+        - default.svc.cluster.local
+        - svc.cluster.local
+        - cluster.local

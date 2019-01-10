@@ -6,7 +6,7 @@ image:
 
 server:
   replicas: 1
-  host: intens.northeurope.cloudapp.azure.com
+  host: intens.westeurope.cloudapp.azure.com
   clusterIssuer: intens-issuer
   pwsecret: intens-pw
 
@@ -16,6 +16,7 @@ scheduler:
 worker:
   replicas: 4
   threads: 4
+  spec: {}
 
 db:
   storageClass: intens-work
