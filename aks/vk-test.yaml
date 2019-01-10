@@ -1,0 +1,71 @@
+# Simple VK test with MS example image.  Use kubectl create/delete -f.
+# Assumes VK setup with advanced networking (vnet) and nginx-ingress running.
+# Browse to http://<ingress-server>/hello/.
+apiVersion: v1
+kind: Service
+metadata:
+  name: aci-helloworld-svc
+spec:
+  # type: LoadBalancer
+  ports:
+  - port: 80
+    name: http
+  - port: 443
+    name: https
+  selector:
+    app: aci-helloworld
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: helloworld
+  labels:
+    app: aci-helloworld
+spec:
+  containers:
+  - image: microsoft/aci-helloworld
+    imagePullPolicy: IfNotPresent
+    name: helloworld
+    resources:
+      requests:
+        memory: 1G
+        cpu: 1
+    ports:
+    - containerPort: 80
+      name: http
+      protocol: TCP
+    - containerPort: 443
+      name: https
+  dnsPolicy: ClusterFirst
+  dnsConfig:
+    searches:
+      - default.svc.cluster.local
+      - svc.cluster.local
+      - cluster.local
+  nodeSelector:
+    kubernetes.io/role: agent
+    beta.kubernetes.io/os: linux
+    type: virtual-kubelet
+  tolerations:
+  - key: virtual-kubelet.io/provider
+    operator: Exists
+  - key: azure.com/aci
+    effect: NoSchedule
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: aci-helloworld-ing
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-redirect-from: "~^http://[^/]+/(.*)"
+    nginx.ingress.kubernetes.io/proxy-redirect-to: "/hello/$1"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /hello/
+        backend:
+          serviceName: aci-helloworld-svc
+          servicePort: 80
