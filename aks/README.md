@@ -39,9 +39,16 @@ Comment: This is a Multimarkdown document.
 ## Cluster setup
 
 - Install `kubectl` and Helm locally.
-- Create a Kubernetes service (AKS).  This creates a new
-  resource group for VMs etc. that the AKS manages: they won't be
-  in the same resource group as the AKS itself.
+- Create a Kubernetes service (AKS).  This creates a new resource
+  group for VMs etc. that the AKS manages: they won't be in the same
+  resource group as the AKS itself.  If you want to set up Virtual
+  Kubelet to run pods on Azure Container Instances, it is easiest to
+  use the "virtual node" feature of AKS, currently in preview.  Create
+  your AKS in a region where the feature is available (currently West
+  Europe, among others) and enable it.  That will force "advanced
+  networking" to be enabled as well, and will create a virtual net or
+  use an existing one, as you choose.  Ordinary nodes will be on one
+  subnet of the vnet and ACI pods in another.
 - Point `kubectl` to the AKS with `az aks get-credentials -g group -n name`.
 - Create a service account for Tiller (Helm back end).  See
   `helm-rbac.yaml` and the link therein.  Then install Tiller.
@@ -84,3 +91,24 @@ Comment: This is a Multimarkdown document.
 [^go west]: Currently West Europe is a bit ahead of North Europe in
     terms of Azure features: Virtual Nodes are in preview for AKS and
     ACI has larger resource limits for Windows.
+
+## Virtual Kubelet
+
+- The easiest way to get VK working is to enable "virtual node" when
+  creating the AKS.  That is a preview feature, not available in all regions.
+- If you want to roll your own, it will be something along the lines
+  in vk-deploy.sh.  See also the [VK ACI README][].
+- The more widely available connector that is installed with `az aks
+  install-connector` does not get the job done because we need the
+  advanced networking (vnet).
+- The "virtual node" feature only deploys a Linux connector.  Vnet
+  support probably doesn't work on the Windows connector.
+- DNS is currently broken on the ACI pods.  See `az-vk-values.yaml`
+  for a fix.  The file contains values for our chart, e.g., `helm
+  install -n mpt -f aks/az-vk-values.yaml charts/simsvc`.  That
+  deploys the workers and the scheduler to ACI via VK.
+- Unfortunately persistent volumes appear completely unsupported by
+  VK.  `kubectl logs` also works funny.  Therefore we keep the web
+  app on a regular node for now.
+
+[VK ACI README]: https://github.com/virtual-kubelet/virtual-kubelet/blob/master/providers/azure/README.md
