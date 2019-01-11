@@ -32,8 +32,10 @@ spec:
           #     memory: 1G
           #     cpu: 1
           env:
-            # - name: FLASK_DEBUG
-            #   value: "1"
+            {{- if .Values.debug }}
+            - name: FLASK_DEBUG
+              value: "1"
+            {{- end }}
             - name: DASK_SCHEDULER_ADDRESS
               value: {{ template "simsvc.fullname" . }}-scheduler:8786
             - name: WORK_DIR

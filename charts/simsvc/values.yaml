@@ -1,3 +1,5 @@
+debug: false
+
 image:
   repository: intens.azurecr.io/simsvc-mpt
   tag: latest
