@@ -6,7 +6,7 @@ import queue, sys, traceback as tb
 
 import flask
 from werkzeug.utils import cached_property
-from dask.distributed import Client, Variable, fire_and_forget
+from dask.distributed import Client, Variable, fire_and_forget, TimeoutError
 
 from . import db
 
@@ -62,7 +62,18 @@ class TaskFlask(db.DBFlask):
     def client(s):
         """Our Dask client
         """
-        return Client()
+        while True:
+            try:
+                return Client(timeout=60)
+            except TimeoutError:
+                s.logger.warning("Scheduler connection timed out; retrying")
+            # Unfortunately Client currently raises IOError on timeout.
+            except IOError as e:
+                if "timed out" in str(e).lower():
+                    s.logger.warning(
+                        "Apparent timeout in scheduler connection; retrying")
+                else:
+                    raise
 
     def flush_updates(s, conn=None):
         """Perform any scheduled database updates.
