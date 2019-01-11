@@ -4,9 +4,12 @@
 # the secret.  Also creates a JSON file with sp data, including
 # password (which is why we set umask 77).
 #
-# If the JSON file already exists, it is assumed that so does the sp on Azure.
-# Then we do not create a sp, just configure Kubernetes with data from
-# the file.
+# If the JSON file already exists, it is assumed that so does the sp
+# on Azure and it has the required permissions.  Then we do not create
+# a sp, just configure Kubernetes with data from the file.  This is useful
+# if you need to rebuild your cluster.  If you need to replace the ACR,
+# delete the old sp described by the JSON file (with az ad sp delete),
+# then delete the file and run this to create a new sp.
 #
 # This allows ACR access for non-AKS clusters, e.g., Minikube.  With AKS
 # it suffices to assign a role to the cluster sp; no password needed.
