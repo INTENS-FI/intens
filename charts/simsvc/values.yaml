@@ -9,9 +9,11 @@ server:
   host: intens.westeurope.cloudapp.azure.com
   clusterIssuer: intens-issuer
   pwsecret: intens-pw
+  spec: {}
 
 scheduler:
   replicas: 1
+  spec: {}
 
 worker:
   replicas: 4

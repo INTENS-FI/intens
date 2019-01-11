@@ -59,3 +59,6 @@ spec:
           persistentVolumeClaim:
             claimName: {{ template "simsvc.fullname" . }}-db
         {{- end }}
+      {{- if .Values.server.spec }}
+{{ toYaml .Values.server.spec | indent 6 }}
+      {{- end }}

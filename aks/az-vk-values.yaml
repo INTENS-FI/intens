@@ -1,6 +1,7 @@
 # For deploying our chart on (Linux) Virtual kubelet
 worker:
   spec:
+    &vk-spec
     tolerations:
     - key: virtual-kubelet.io/provider
       operator: Exists
@@ -17,3 +18,14 @@ worker:
         - default.svc.cluster.local
         - svc.cluster.local
         - cluster.local
+
+scheduler:
+  spec: *vk-spec
+
+# PVs are not supported by VK (at all, on any platform).
+# https://github.com/virtual-kubelet/virtual-kubelet/issues/367
+# Leave server on a real node so it can mount db.  Also, kubectl logs
+# -f does not work on VK pods (it does not follow, just prints the
+# current log), which is another reason for keeping the server off VK.
+work:
+  storageClass: ""

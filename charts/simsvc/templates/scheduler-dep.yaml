@@ -34,3 +34,6 @@ spec:
           #   requests:
           #     memory: 1G
           #     cpu: 1
+      {{- if .Values.scheduler.spec }}
+{{ toYaml .Values.scheduler.spec | indent 6 }}
+      {{- end }}
