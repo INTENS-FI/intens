@@ -101,8 +101,10 @@ Comment: This is a Multimarkdown document.
 - The more widely available connector that is installed with `az aks
   install-connector` does not get the job done because we need the
   advanced networking (vnet).
-- The "virtual node" feature only deploys a Linux connector.  Vnet
-  support probably doesn't work on the Windows connector.
+- The "virtual node" feature only deploys a Linux connector.
+  According to Microsoft [Windows support is planned][win-vnet].  When
+  I tried to install VK manually with vnet support, it likewise only
+  worked for Linux.
 - DNS is currently broken on the ACI pods.  See `az-vk-values.yaml`
   for a fix.  The file contains values for our chart, e.g., `helm
   install -n mpt -f aks/az-vk-values.yaml charts/simsvc`.  That
@@ -112,3 +114,4 @@ Comment: This is a Multimarkdown document.
   app on a regular node for now.
 
 [VK ACI README]: https://github.com/virtual-kubelet/virtual-kubelet/blob/master/providers/azure/README.md
+[win-vnet]: https://docs.microsoft.com/en-us/azure/container-instances/container-instances-vnet#preview-limitations
