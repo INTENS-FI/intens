@@ -1,6 +1,6 @@
 <configuration>
   <module class="fi.vtt.intens.o4j_client.opt.SimsvcModule">
-    <property name="modelFile">/home/ttekth/src/intens/models/mpt-model.yaml</property>
+    <property name="modelFile">/home/ttekth/src/intens/models/localhost-model.yaml</property>
     <property name="problemFile">/home/ttekth/src/intens/models/mpt-problem.csv</property>
     <property name="simulator"/>
     <property name="timeOrigin">2010-01-01T00:00:00Z</property>
