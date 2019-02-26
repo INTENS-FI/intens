@@ -7,11 +7,11 @@ FROM $base
 WORKDIR /app
 USER root
 ARG model
-COPY $model .
+COPY $model model/
 RUN mdl=`basename $model`; \
     if [ -z "${mdl%%*.py}" ]; \
-    then mv $mdl model.py; \
-    else mv $mdl model; \
+    then mv "model/$mdl" model.py; \
+         rmdir model; \
     fi
 ENV PYTHONPATH=/app:$PYTHONPATH
 
