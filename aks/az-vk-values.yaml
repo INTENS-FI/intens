@@ -1,4 +1,5 @@
-# For deploying our chart on (Linux) Virtual kubelet
+# Simsvc chart values for deploying our chart on Virtual Kubelet/Node.
+
 worker:
   spec:
     &vk-spec
@@ -22,10 +23,12 @@ worker:
 scheduler:
   spec: *vk-spec
 
-# PVs are not supported by VK (at all, on any platform).
-# https://github.com/virtual-kubelet/virtual-kubelet/issues/367
-# Leave server on a real node so it can mount db.  Also, kubectl logs
-# -f does not work on VK pods (it does not follow, just prints the
-# current log), which is another reason for keeping the server off VK.
+# PVs are not supported by VK currently (at all, on any platform).
+# https://github.com/virtual-kubelet/virtual-kubelet/issues/367.  We
+# left server on a real node above, so it can mount db.  Also, kubectl
+# logs -f does not work on VK pods (it does not follow, just prints
+# about a dozen last lines of the current log; the full log can be
+# retrieved with "az container logs" but appears unavailable via K8s).
+# That is another reason for keeping the server off VK.
 work:
   storageClass: ""

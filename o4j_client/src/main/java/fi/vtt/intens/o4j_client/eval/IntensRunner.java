@@ -413,7 +413,7 @@ public class IntensRunner implements SimulationRunner {
 
     /**
      * Construct a runner for the given model and connect with Socket.IO.
-     * Does not waits for the Socket.IO connection to be established.
+     * Does not wait for the Socket.IO connection to be established.
      * {@link #start(SimulationInput)} does that.
      * @param model Defines the Simsvc connection details.
      */

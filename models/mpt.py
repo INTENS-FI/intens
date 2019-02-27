@@ -1,4 +1,18 @@
-"""A simple portfolio model for optimization client testing.
+"""A simple test model for optimization client.
+Based on "modern" portfolio theory (Markowitz, 1952).
+
+Inputs:
+	cov	covariance between assets (positive semidefinite matrix)
+	mean	expected return for each asset (vector)
+	c.w	unnormalized portfolio weights (vector)
+Outputs:
+	c.norm	normalized portfolio weights (vector)
+	c.er	expected return of portfolio (scalar)
+	c.var	variance of portfolio (non-negative scalar)
+
+Random values for cov and mean can be generated with init-mpt.py.  c.w is
+the decision variable; the objectives are to maximize c.er and minimize c.var.
+Negative weights can be used for shorting.
 """
 
 from concurrent.futures import CancelledError
