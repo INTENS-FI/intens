@@ -74,11 +74,11 @@ Comment: This is a Multimarkdown document.
   o4j_client).  The username is "intens".  Remember to use https to
   prevent password eavesdropping.
 - Set up dynamic provisioning of work volumes.  See
-  `aks/storage-rbac.yaml` and the link therein.  The storage account
-  name must be globally unique: its volumes should be available at
+  `aks/storage-rbac.yaml` and the link therein.  The storage
+  class definition is in `aks/azure-sc.yaml`.  Storage accounts
+  are created automatically.[^sa-spam]  Volumes should be available at
   `//<account>.file.core.windows.net/<volume>`, but I haven't actually
-  managed to mount them.  Edit the storage account name in
-  `aks/azure-sc.yaml` and apply with `kubectl`.
+  managed to mount them.  They can be browsed via the portal though.
 - You should now be able to deploy Simsvc instances with `helm install
   -n name charts/simsvc`.  See `charts/simsvc/values.xml` for
   parameters.  The release name is also the leading path component of
@@ -91,6 +91,7 @@ Comment: This is a Multimarkdown document.
 [^go west]: Currently West Europe is a bit ahead of North Europe in
     terms of Azure features: Virtual Nodes are in preview for AKS and
     ACI has larger resource limits for Windows.
+[^sa-spam]: Currently it seems to create more than one, likely a bug.
 
 ## Virtual Kubelet
 
@@ -112,6 +113,10 @@ Comment: This is a Multimarkdown document.
 - Unfortunately persistent volumes appear completely unsupported by
   VK.  `kubectl logs` also works funny.  Therefore we keep the web
   app on a regular node for now.
+- Deletion of vnets created by "virtual node" is currently buggy.
+  You need to [delete the service association link with az][del-vnet]
+  until they fix that.  The rest can be deleted from the portal.
 
 [VK ACI README]: https://github.com/virtual-kubelet/virtual-kubelet/blob/master/providers/azure/README.md
 [win-vnet]: https://docs.microsoft.com/en-us/azure/container-instances/container-instances-vnet#preview-limitations
+[del-vnet]: https://docs.microsoft.com/en-us/azure/container-instances/container-instances-vnet#delete-network-resources
