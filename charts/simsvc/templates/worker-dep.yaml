@@ -27,14 +27,16 @@ spec:
           args:
             - dask-worker
             - {{ template "simsvc.fullname" . }}-scheduler:8786
+{{- if .Values.worker.threads }}
             - --nthreads
             - {{ .Values.worker.threads | quote }}
+{{- end }}
           tty: true
-          # resources:
-          #   requests:
-          #     memory: 1G
-          #     cpu: 1
-      {{- if .Values.work.storageClass }}
+{{- if .Values.worker.resources }}
+          resources:
+{{ toYaml .Values.worker.resources | indent 12 }}
+{{- end }}
+{{- if .Values.work.storageClass }}
           volumeMounts:
             - mountPath: "/work"
               name: work
@@ -42,7 +44,7 @@ spec:
         - name: work
           persistentVolumeClaim:
             claimName: {{ template "simsvc.fullname" . }}-work
-      {{- end }}
-      {{- if .Values.worker.spec }}
+{{- end }}
+{{- if .Values.worker.spec }}
 {{ toYaml .Values.worker.spec | indent 6 }}
-      {{- end }}
+{{- end }}

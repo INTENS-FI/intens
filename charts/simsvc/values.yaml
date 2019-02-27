@@ -19,7 +19,10 @@ scheduler:
 
 worker:
   replicas: 4
-  threads: 4
+  # threads used by each worker for executing tasks (0 = detect cores)
+  threads: 0
+  # resources (requests & limits) for the container
+  resources: {}
   spec: {}
 
 db:
