@@ -17,6 +17,12 @@ RUN mkdir /mcr-tmp && cd /mcr-tmp && unzip -q "/$mcr" \
     cd / && rm -rf "/$mcr" /mcr-tmp
 
 FROM $base
+USER root:root
 COPY --from=build-stage /mcr /mcr
+# MCR dynamically loads libXt at run-time (even if the app does no graphics).
+RUN apt-get update && apt-get install -y libxt6
 ARG ver
-ENV MCR=/mcr/$ver
+# No idea what the second var is, but it seems to be required.
+ENV MCR=/mcr/$ver MCR_CACHE_ROOT=/tmp/mcr-cache
+
+USER $SIMSVC_USER
