@@ -11,10 +11,10 @@ FROM $build_base AS build-stage
 USER root:root
 ARG mcr
 RUN apt-get update && apt-get install -y unzip
-COPY $mcr /$mcr
-RUN mkdir /mcr-tmp && cd /mcr-tmp && unzip -q "/$mcr" \
-    && ./install -mode silent -agreeToLicense yes -destinationFolder /mcr; \
-    cd / && rm -rf "/$mcr" /mcr-tmp
+COPY $mcr /mcr.zip
+RUN trap "cd / && rm -rf mcr.zip mcr-tmp" 0 \
+    && mkdir /mcr-tmp && cd /mcr-tmp && unzip -q "/mcr.zip" \
+    && ./install -mode silent -agreeToLicense yes -destinationFolder /mcr
 
 FROM $base
 USER root:root
