@@ -37,6 +37,8 @@ class TaskFlask(db.DBFlask):
     		Entries are added by launch and deleted by callback when
     		futures terminate - which can happen at any time.  If
 		you need to iterate over tasks, make a copy.
+    gathers	Finished tasks whose results should be gathered before
+		executing database updates.  job id -> future.
     updates	A queue of scheduled database updates.  Because future
     		callbacks may execute at any time from any thread in
     		the process, it is unsafe to modify the database
@@ -98,8 +100,12 @@ class TaskFlask(db.DBFlask):
         gat = s.gathers
         s.gathers = {}
         s.logger.debug("Gathering %s futures", len(gat))
-        s.client.gather(gat)
+        good = s.client.gather(gat, errors='skip')
+        if len(good) < len(gat):
+            bad = gat.keys() - good.keys()
+            s.logger.error("Errors gathering %s futures: %s", len(bad), bad)
         s.logger.debug("Flushing approximately %s updates", s.updates.qsize())
+        bad = []
         while True:
             try:
                 upd = s.updates.get_nowait()
@@ -109,9 +115,13 @@ class TaskFlask(db.DBFlask):
                     upd(conn)
             except queue.Empty:
                 break
+            except TimeoutError:
+                bad.append(upd)
             except:
                 s.logger.exception("Scheduled update failed.")
             s.updates.task_done()
+        for b in bad:
+            s.updates.put(b)
 
     def refresh_jobs(s, conn=None):
         """Check if any scheduled jobs have started.  If so, record in the
@@ -149,7 +159,10 @@ class TaskFlask(db.DBFlask):
         assert fut.done()
         del s.tasks[jid]
         def save_job(conn):
-            job = db.get_state(conn).jobs[jid]
+            job = db.get_state(conn).jobs.get(jid)
+            if job is None:
+                s.logger.error("Job %s is gone.  Not saving it then.", jid)
+                return
             try:
                 job.save_results(fut.result())
             except CancelledError:
@@ -157,6 +170,10 @@ class TaskFlask(db.DBFlask):
                 # We sometimes cancel invalid tasks.
                 if job.status != db.Job_status.INVALID:
                     job.status = db.Job_status.CANCELLED
+            except TimeoutError:
+                s.logger.error("Timeout fetching job %s, will retry", jid)
+                s.gathers[jid] = fut
+                raise
             except:
                 s.logger.debug("Job %s failed", jid)
                 job.status = db.Job_status.FAILED
