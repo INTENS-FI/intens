@@ -97,10 +97,17 @@ class TaskFlask(db.DBFlask):
 
         A database connection may be provided; if not, creates and
         commits its own transaction.  In either case, updates are bundled
-        into the same transaction.  If any update raises an exception,
-        it is logged and suppressed.  There is no provision for
-        retrying; also failed updates are removed from the queue.  It
-        is also possible that commit will fail.
+        into the same transaction.
+
+        Updates that raise TimeoutError are re-queued after the whole
+        queue has been processed.  Before raising such an update
+        function must add its job back to gathers but must not add
+        itself to updates (that will be done here).
+
+        Any other exceptions from updates are logged and suppressed.
+        They do not cause a retry; the failed updates are removed
+        from the queue.  It is also possible that commit will fail;
+        there is no provision for retrying that.
 
         Should be called before any request involving jobs.
 
@@ -145,7 +152,9 @@ class TaskFlask(db.DBFlask):
     def refresh_jobs(s, conn=None):
         """Check if any scheduled jobs have started.  If so, record in the
         database.  A database connection may be provided; if not,
-        creates and commits its own transaction.
+        creates and commits its own transaction.  Also check that each
+        task corresponds to an active job in the database.  Cancel any
+        task that does not.
 
         Should be called before any request that needs to distinguish
         between scheduled and running jobs.
@@ -278,12 +287,14 @@ class TaskFlask(db.DBFlask):
         at every request may be a bit expensive.  flush_updates and
         refresh_jobs should be sufficient for that and faster.
         """
-        snap = frozenset(s.tasks)
+        live = set(s.tasks)
         with s.transact("sync_tasks") as conn:
             s.flush_updates(conn)
+            # Don't relaunch timed out jobs.
+            live |= s.gathers.keys()
             jobs = db.get_state(conn).jobs
             for jid, job in jobs.items():
-                if job.status.active() and jid not in snap:
+                if job.status.active() and jid not in live:
                     try:
                         s.launch(jid, job)
                     except:
