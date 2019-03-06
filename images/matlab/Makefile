@@ -1,8 +1,8 @@
 # Makefile for building a simsvc-matlab image.
 # This is an itermediate image for running Matlab models in Simsvc.
 
-BASE = intens.azurecr.io/simsvc
-IMAGE = intens.azurecr.io/simsvc-matlab
+BASE = daskdev/dask
+IMAGE = dask-matlab
 
 # A jq query on mcr.json for finding the subdirectory (of the requested
 # installation directory) where MCR actually gets installed.  

@@ -4,13 +4,18 @@
 
 PYTHON=python3
 WHEEL=Simsvc-0.2-py3-none-any.whl
+BASE=daskdev/dask
 IMAGE=intens.azurecr.io/simsvc
 
-.PHONY: build
+.PHONY: build clean
 
 build: dist/$(WHEEL)
 	docker build $(DOCKERFLAGS) -t $(IMAGE) \
+		--build-arg base=$(BASE) \
 		--build-arg simsvc_whl=$(WHEEL) .
+
+clean:
+	$(PYTHON) setup.py clean
 
 dist/$(WHEEL): setup.py simsvc/*
 	$(PYTHON) setup.py bdist_wheel

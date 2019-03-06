@@ -4,9 +4,11 @@
 # Build-arg simsvc_whl is the wheel file name without path.
 # The server runs as build-arg user, default nobody:nogroup,
 # and listens at build-arg port, default 8080.
+# Build arg base is the base image, which must have conda.
 # Derived images should leave WORKDIR as /run and USER as $SIMSVC_USER.
 
-FROM daskdev/dask:latest
+ARG base=daskdev/dask
+FROM $base
 
 RUN conda install --yes flask flask-socketio \
     && conda install --yes -c conda-forge zodb zodburi eventlet
