@@ -8,6 +8,7 @@ import eu.cityopt.sim.eval.SimulationOutput;
 public class IntensJob extends CompletableFuture<SimulationOutput>  {
     public final int jobid;
     public final SimulationInput input;
+    public int fetchFailures = 0;
 
     public IntensJob(int jobid, SimulationInput input) {
         this.jobid = jobid;

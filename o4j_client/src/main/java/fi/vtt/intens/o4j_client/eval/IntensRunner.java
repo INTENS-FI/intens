@@ -1,7 +1,7 @@
 package fi.vtt.intens.o4j_client.eval;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
+import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -108,9 +108,11 @@ public class IntensRunner implements SimulationRunner {
                         IntensJob job;
                         if (!ent.getValue().isActive()
                             && (job = jobs.remove(ent.getKey())) != null) {
-                            logger.warn("Termination event lost on job {}",
+                            if (job.fetchFailures == 0)
+                                logger.warn(
+                                        "Termination event lost for job {}",
                                         ent.getKey());
-                            completeJob(ent.getValue(), job);
+                            tryCompleteJob(ent.getValue(), job);
                         }
                     }
                 } catch (InterruptedException e){
@@ -172,7 +174,7 @@ public class IntensRunner implements SimulationRunner {
      */
     private Object parseResult(Type type, JsonNode json)
             throws IOException {
-        switch(type) {
+        switch (type) {
         case DOUBLE:
         case TIMESTAMP:
             return om.treeToValue(json, Double.class);
@@ -291,6 +293,39 @@ public class IntensRunner implements SimulationRunner {
     }
 
     /**
+     * Like {@link #completeJob} but handles exceptions.
+     * On IOException job is added to jobs, causing UpdateThread
+     * to retry it.  The error count of the job is incremented and an
+     * error message is logged.
+     */
+    private void tryCompleteJob(JobStatus status, IntensJob job) {
+        try {
+            completeJob(status, job);
+        } catch (IOException e) {
+            job.fetchFailures++;
+            jobs.put(job.jobid, job);
+            if (e instanceof SocketTimeoutException) {
+                logger.warn("tryCompleteJob: timeout on job {}, "
+                        + "attempt {}", job.jobid, job.fetchFailures);
+            } else {
+                logger.error("tryCompleteJob: IO exception on job {}, "
+                        + "attempt {}", job.jobid, e);
+            }
+        }
+    }
+
+    /**
+     * Like {@link #tryCompleteJob(JobStatus, IntensJob)} but gets the
+     * job from jobs, removing it.  It is put back if there is an error.
+     * No-op if jobid was not in jobs.
+     */
+    private void tryCompleteJob(JobStatus status, int jobid) {
+        IntensJob job = jobs.remove(jobid);
+        if (job != null)
+            tryCompleteJob(status, job);
+    }
+
+    /**
      * Query the server for the status of job.  If active (not terminated)
      * arrange job to be waited for and return false.  Otherwise complete job
      * (with {@link #completeJob(JobStatus, IntensJob)}), remove it from
@@ -334,12 +369,8 @@ public class IntensRunner implements SimulationRunner {
                 if (st.isActive())
                     return false;
                 jobs.remove(job.jobid);
-                try {
-                    completeJob(st, job);
-                } catch (IOException e) {
-                    jobs.put(job.jobid, job);
-                }
-                return true;
+                tryCompleteJob(st, job);
+                return job.isDone();
             default:
                 throw new HttpException(resp);
             }
@@ -399,16 +430,7 @@ public class IntensRunner implements SimulationRunner {
             logger.error("on_terminated: invalid payload " + args[0]);
             return;
         }
-        IntensJob job = jobs.remove(arg.job);
-        if (job != null) {
-            try {
-                completeJob(arg.status, job);
-            } catch (IOException e) {
-                jobs.put(arg.job, job);
-                logger.error(
-                        "on_terminated: IO exception on job " + arg.job, e);
-            }
-        }
+        tryCompleteJob(arg.status, arg.job);
     }
 
     /**
@@ -526,13 +548,19 @@ public class IntensRunner implements SimulationRunner {
 //                                      out -> om.writeValue(out, binds));
         var body = RequestBody.create(json_mt, om.writeValueAsString(binds));
         var req = new Request.Builder().url(uri).post(body).build();
-        try (var resp = http.newCall(req).execute()) {
-            if (resp.code() != HTTP_CREATED)
-                throw new HttpException(resp);
-            int jobid = om.readValue(resp.body().string(), Integer.class);
-            var job = new IntensJob(jobid, input);
-            getJobStatus(job, true);
-            return job;
+        int jobid;
+        for (;;) {
+            try (var resp = http.newCall(req).execute()) {
+                if (resp.code() != HTTP_CREATED)
+                    throw new HttpException(resp);
+                jobid = om.readValue(resp.body().string(), Integer.class);
+                break;
+            } catch (SocketTimeoutException e) {
+                logger.warn("Timeout posting job");
+            }
         }
+        var job = new IntensJob(jobid, input);
+        getJobStatus(job, true);
+        return job;
     }
 }
