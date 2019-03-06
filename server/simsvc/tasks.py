@@ -12,6 +12,23 @@ from . import db
 
 from model import task
 
+def timeout_kluge(f, logger=None):
+    """Return f(), handle IOErrors.
+    If f raises IOError with a message containing "timed out" (in any case),
+    raise TimeoutError.  If logger is given, log an info message.  Other
+    IOErrors are re-raised as is.  This is a workaround for dask.distributed
+    raising IOError on timeout instead of TimeoutError.
+    """
+    try:
+        return f()
+    except IOError as e:
+        if "timed out" in str(e).lower():
+            if logger is not None:
+                logger.info("Apparent timeout detected.")
+            raise TimeoutError("Apparent timeout") from e
+        else:
+            raise
+
 class Task_spec(object):
     """Parameters passed to a simulation task.
     The task should treate this as read-only.
@@ -43,8 +60,11 @@ class TaskFlask(db.DBFlask):
     		callbacks may execute at any time from any thread in
     		the process, it is unsafe to modify the database
     		from them.  Modifications are queued here instead.
-    		Entries are functions taking a database connection as argument.
-    		They are executed by flush_updates.
+    		Entries are functions.  They are called by flush_updates
+		as upd(conn, res) where conn is a database connection and
+		res is a dictionary job id -> result.  Updates that need
+		results should first check res and if not found there,
+ 		call the result method on the task future.
     monitor	An optional launch monitor.  Unless None
     		monitor(job id, future) is called after a new job is launched.
     		The monitor may call future.add_done_callback to detect
@@ -66,16 +86,11 @@ class TaskFlask(db.DBFlask):
         """
         while True:
             try:
-                return Client(timeout=60, direct_to_workers=True)
+                return timeout_kluge(
+                    lambda: Client(timeout=60, direct_to_workers=True),
+                    s.logger)
             except TimeoutError:
                 s.logger.warning("Scheduler connection timed out; retrying")
-            # Unfortunately Client currently raises IOError on timeout.
-            except IOError as e:
-                if "timed out" in str(e).lower():
-                    s.logger.warning(
-                        "Apparent timeout in scheduler connection; retrying")
-                else:
-                    raise
 
     def flush_updates(s, conn=None):
         """Perform any scheduled database updates.
@@ -101,20 +116,22 @@ class TaskFlask(db.DBFlask):
         s.gathers = {}
         if gat:
             s.logger.debug("Gathering %s futures", len(gat))
-            good = s.client.gather(gat, errors='skip')
-            if len(good) < len(gat):
-                bad = gat.keys() - good.keys()
+            res = s.client.gather(gat, errors='skip')
+            if len(res) < len(gat):
+                bad = gat.keys() - res.keys()
                 s.logger.error("Errors gathering %s futures: %s",
                                len(bad), bad)
+        else:
+            res = {}
         s.logger.debug("Flushing approximately %s updates", s.updates.qsize())
         bad = []
         while True:
             try:
                 upd = s.updates.get_nowait()
                 if isinstance(upd, (list, tuple)):
-                    upd[0](conn, *upd[1:])
+                    upd[0](conn, res, *upd[1:])
                 else:
-                    upd(conn)
+                    upd(conn, res)
             except queue.Empty:
                 break
             except TimeoutError:
@@ -160,13 +177,16 @@ class TaskFlask(db.DBFlask):
         assert s.tasks[jid][0] == fut
         assert fut.done()
         del s.tasks[jid]
-        def save_job(conn):
+        def save_job(conn, res):
             job = db.get_state(conn).jobs.get(jid)
             if job is None:
                 s.logger.error("Job %s is gone.  Not saving it then.", jid)
                 return
             try:
-                job.save_results(fut.result())
+                r = res.get(jid)
+                if r is None:
+                    r = timeout_kluge(fut.result, s.logger)
+                job.save_results(r)
             except CancelledError:
                 s.logger.debug("Job %s cancelled", jid)
                 # We sometimes cancel invalid tasks.
@@ -219,7 +239,7 @@ class TaskFlask(db.DBFlask):
             return False
         fut, canc = ent
         if delete:
-            def del_job(conn):
+            def del_job(conn, res):
                 s.logger.debug("Deleting job %s on cancel", jid)
                 jobs = db.get_state(conn).jobs
                 if jobs[jid].close():
