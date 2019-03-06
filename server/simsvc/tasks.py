@@ -99,11 +99,13 @@ class TaskFlask(db.DBFlask):
                 return s.flush_updates(conn)
         gat = s.gathers
         s.gathers = {}
-        s.logger.debug("Gathering %s futures", len(gat))
-        good = s.client.gather(gat, errors='skip')
-        if len(good) < len(gat):
-            bad = gat.keys() - good.keys()
-            s.logger.error("Errors gathering %s futures: %s", len(bad), bad)
+        if gat:
+            s.logger.debug("Gathering %s futures", len(gat))
+            good = s.client.gather(gat, errors='skip')
+            if len(good) < len(gat):
+                bad = gat.keys() - good.keys()
+                s.logger.error("Errors gathering %s futures: %s",
+                               len(bad), bad)
         s.logger.debug("Flushing approximately %s updates", s.updates.qsize())
         bad = []
         while True:
