@@ -66,7 +66,7 @@ class TaskFlask(db.DBFlask):
         """
         while True:
             try:
-                return Client(timeout=60)
+                return Client(timeout=60, direct_to_workers=True)
             except TimeoutError:
                 s.logger.warning("Scheduler connection timed out; retrying")
             # Unfortunately Client currently raises IOError on timeout.
