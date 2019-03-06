@@ -21,12 +21,12 @@ RUN pip install $simsvc_whl && rm $simsvc_whl
 WORKDIR /run
 ARG user=nobody:nogroup
 ARG port=8080
+ARG dbdir=/db
 ENV SIMSVC_USER=$user \
-    DB_DIR=/db
-ENV JOB_DB=file://$DB_DIR/simsvc.fs \
+    JOB_DB=file://$dbdir/simsvc.fs \
     WORK_DIR=/work \
     SIMSVC_ADDR=:$port
-RUN mkdir -p $WORK_DIR $DB_DIR && chown $SIMSVC_USER $WORK_DIR $DB_DIR .
+RUN mkdir -p $WORK_DIR $dbdir && chown $SIMSVC_USER $WORK_DIR $dbdir .
 USER $SIMSVC_USER
 CMD ["python3", "-m", "simsvc"]
 EXPOSE $port
