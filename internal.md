@@ -108,3 +108,62 @@ or using a real threaded server.
 - Cancellation immediately sets job status to cancelled, which
   may conflict if the job happens to finish normally at the same time.
   That should be resolved for normal termination.
+
+# Miscellanea
+
+## Job lifecycle
+
+* Posted:
+    - Created in DB with `INVALID` status.
+    - `workdir` is created.
+    - Launched (status changed to `SCHEDULED`, added to `tasks`).
+
+    The whole posting is a single transaction.  If anything goes
+    wrong, the job won't be in the DB and we try to remove its
+    `workdir`.  The job may still be in `tasks` and actually running
+    (runaway task).
+* Running jobs are in DB[^running] and `tasks`.
+* Terminates, calling `task_done` (in separate thread):
+    - Removed from `tasks`.
+    - Added to gathers.
+    - `save_job` queued to `updates`.
+* Pending `flush_updates` job is in DB as active and in `gathers`.
+* Gathered (`flush_updates`):
+    - Removed from `gathers` (becomes candidate for relauching).
+    - Succesful results only in a local variable passed to updates.
+    - Failure results not gathered; have to be retrieved from the
+      futures.
+    - Not sure about timeouts.  We assume `gather` does not raise
+      exceptions, and haven't seen it raise.
+
+    Reentrancy is attempted but rather poorly.  Should not be
+    a problem as long as `flush_updates` only does non-green I/O.
+* Saved in `save_job`:
+    - If not in DB (runaway task from failed launch), no-op.
+    - Use gathered result if available, otherwise retrieve from
+      future.  Update status (to inactive) & save results.
+    - On timeout don't change DB, put job back in `gathers` and
+      have `flush_update` requeue `save_job`.
+* Periodic cleanup (`sync_tasks`):
+    - Jobs active in DB but not in tasks are relaunched.
+    - Tasks (in `tasks`) not in DB are cancelled.
+    - Tasks inactive in DB are cancelled and marked INVALID.
+
+    `sync_tasks` must not happen while `flush_updates` is in progress,
+    because gathered but unsaved jobs would be candidates for
+    relaunching.
+* Deleted
+    - Inactive tasks are just deleted from the DB, `workdir` removed.
+    - Active tasks get a `del_on_cancel` callback and are cancelled.
+    - `del_on_cancel` schedules a `del_job` update when the task
+      terminates (if it was cancelled)
+    - `save_job` gets queued first because its callback was added first.
+    - `del_job` deletes the job from the DB & `workdir`.
+
+In summary, a job is active in the DB from posting to saving
+(`save_job`).  It is in `tasks` from posting to termination and in
+`gathers` from termination until gathering.  Between gathering and
+saving it is in neither, which is a bit dangerous.
+
+[^running]: Unfortunately we can't detect the transition from
+    SCHEDULED to RUNNING, thus all active jobs are in DB as SCHEDULED.
