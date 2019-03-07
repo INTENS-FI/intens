@@ -46,6 +46,19 @@ class Task_spec(object):
         s.workdir = job.workdir
         s.jobid = jobid
 
+#XXX Can this actually be made to work somehow?
+class Bogo_var(object):
+    """Pretends to be a dask.distribute.Variable but is not actually shared.
+    """
+    def __init__(s):
+        s.value = None
+
+    def get(s):
+        return s.value
+
+    def set(s, v):
+        s.value = v
+
 class TaskFlask(db.DBFlask):
     """A Flask app with Dask background jobs.
 
@@ -222,7 +235,7 @@ class TaskFlask(db.DBFlask):
         Caller should provide a transaction and commit if launch returns.
         Otherwise we may have a running job that is not in the database.
         """
-        canc = Variable()
+        canc = Bogo_var()
         canc.set(False)
         spec = Task_spec(jid, job)
         fut = s.client.compute(task(spec, canc))
