@@ -1,0 +1,7 @@
+url: https://intens.westeurope.cloudapp.azure.com/mpt/
+descriptions:
+  en: Toy model based on "modern" portfolio theory (Markowitz, 1952)
+cafile: etc/intens-cacert.pem
+auth:
+  username: intens
+  password: ***REMOVED***
