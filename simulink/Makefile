@@ -21,7 +21,7 @@ CLEANDIRS = %_grt_rtw %_fmu
 CLEANFILES = % %.zip %.fmu
 
 .PHONY: all clean
-.SECONDARY: $(MODEL).zip
+.SECONDARY: $(MODEL:%=%.zip)
 
 all: $(MODEL:%=%.fmu)
 
@@ -31,7 +31,7 @@ clean:
 
 %.fmu: %.zip
 	mkdir -p $*_fmu
-	$(SIMULIX) $(SXFLAGS) -p $*_fmu $<
+	$(SIMULIX) $(SXFLAGS) -p $*_fmu $*
 	mv $*_fmu/$(@F) $@
 
 %.zip: %.slx build_rtw.m
