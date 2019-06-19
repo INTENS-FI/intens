@@ -1,8 +1,7 @@
 # Build a FMU from a Simulink model with Simulink Coder and Simulix.
-# See https://github.com/Kvixen/Simulix.
-# Configure code generation options per Simulix documentation.
-# Also check that Code Generation / Interface / Shared code placement is Auto.
-# Use GNU Make.
+# For GNU Make.  Code generation options have to be configured in
+# Simulink - they are saved in the model file - as described in
+# https://github.com/Kvixen/Simulix and README.md.
 
 # Simulink model files without extension (.slx).
 MODEL = model
