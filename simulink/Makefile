@@ -25,7 +25,8 @@ CLEANFILES = % %.zip %.fmu
 all: $(MODEL:%=%.fmu)
 
 clean:
-	rm -rf $(foreach d, $(CLEANDIRS), $(MODEL:%=$d)) slprj
+	rm -rf $(addsuffix slprj, $(dir $(MODEL)))
+	rm -rf $(foreach d, $(CLEANDIRS), $(MODEL:%=$d))
 	rm -f $(foreach f, $(CLEANFILES), $(MODEL:%=$f))
 
 %.fmu: %.zip
