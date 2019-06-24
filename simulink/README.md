@@ -8,6 +8,7 @@ See [Simulix documentation](https://github.com/Kvixen/Simulix).  In addition:
 - Interface / Code interface must be Nonreusable function.
 - Optimization / Default parameter behaviour must usually be Inlined
   (name conflicts are likely with Tunable).
+- Generate code only may be set.  Simulix compiles from C in any case.
 
 ## Parameters
 
