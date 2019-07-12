@@ -6,13 +6,15 @@ PYTHON=python3
 WHEEL=Simsvc-0.2-py3-none-any.whl
 BASE=daskdev/dask
 IMAGE=simsvc
+SIMSVC_USER=nobody:nogroup
+PERM=u+rwx
 
 .PHONY: build clean
 
 build: dist/$(WHEEL)
 	docker build $(DOCKERFLAGS) -t $(IMAGE) \
-		--build-arg base=$(BASE) \
-		--build-arg simsvc_whl=$(WHEEL) .
+		--build-arg base=$(BASE) --build-arg simsvc_whl=$(WHEEL) \
+		--build-arg user=$(SIMSVC_USER) --build-arg perm=$(PERM) .
 
 clean:
 	$(PYTHON) setup.py clean

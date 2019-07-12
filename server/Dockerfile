@@ -5,7 +5,9 @@
 # The server runs as build-arg user, default nobody:nogroup,
 # and listens at build-arg port, default 8080.
 # Build arg base is the base image, which must have conda.
-# Derived images should leave WORKDIR as /run and USER as $SIMSVC_USER.
+# Build arg perm is passed to chmod for setting permissions of writable
+# directories, default is u+rwx.
+# Derived images should leave WORKDIR as /apprun and USER as $SIMSVC_USER.
 
 ARG base=daskdev/dask
 FROM $base
@@ -18,15 +20,18 @@ ARG simsvc_whl
 COPY dist/$simsvc_whl .
 RUN pip install $simsvc_whl && rm $simsvc_whl
 
-WORKDIR /run
+WORKDIR /apprun
 ARG user=nobody:nogroup
+ARG perm=u+rwx
 ARG port=8080
 ARG dbdir=/db
 ENV SIMSVC_USER=$user \
     JOB_DB=file://$dbdir/simsvc.fs \
     WORK_DIR=/work \
     SIMSVC_ADDR=:$port
-RUN mkdir -p $WORK_DIR $dbdir && chown $SIMSVC_USER $WORK_DIR $dbdir .
+RUN mkdir -p $WORK_DIR $dbdir \
+    && chown $SIMSVC_USER $WORK_DIR $dbdir . \
+    && chmod $perm $WORK_DIR $dbdir .
 USER $SIMSVC_USER
 CMD ["python3", "-m", "simsvc"]
 EXPOSE $port

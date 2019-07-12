@@ -19,4 +19,4 @@ ENV PYTHONPATH=/app:$PYTHONPATH
 # Instead, as one might surmise, the last USER command defines who the
 # image runs as.  I haven't tested but suspect it is the same with WORKDIR.
 USER $SIMSVC_USER
-WORKDIR /run
+WORKDIR /apprun
