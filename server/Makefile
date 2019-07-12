@@ -5,7 +5,7 @@
 PYTHON=python3
 WHEEL=Simsvc-0.2-py3-none-any.whl
 BASE=daskdev/dask
-IMAGE=intens.azurecr.io/simsvc
+IMAGE=simsvc
 
 .PHONY: build clean
 

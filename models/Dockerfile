@@ -1,7 +1,7 @@
 # Build a model image
 # Pass the model as build-arg model.  Can be a module or a package.
 
-ARG base=intens.azurecr.io/simsvc
+ARG base=simsvc
 FROM $base
 
 WORKDIR /app
