@@ -6,6 +6,10 @@ class Config(object):
     See .util.addrstr for the format.
     """
 
+    SIMSVC_ROOT = os.environ.get("SIMSVC_ROOT", "/")
+    """Root path of the app.
+    """
+
     WORK_DIR = os.environ.get("WORK_DIR", None)
     """The parent of job work directories or false to disable
     job work directories

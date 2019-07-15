@@ -13,6 +13,7 @@ def create_app(**kws):
     prefers Eventlet.  We assume that greenthreads are safe against concurrency
     issues, in particular the standard library has not been monkey-patched.
     """
+    from urllib.parse import urljoin
     from flask_socketio import SocketIO
 
     from .tasks import TaskFlask
@@ -22,15 +23,17 @@ def create_app(**kws):
     app = TaskFlask(__name__)
     app.config.from_object(Config)
 
-    socketio = sockio.bind_socketio(app, **kws)
+    p = app.config['SIMSVC_ROOT']
 
-    app.register_blueprint(jobs.jobs_bp, url_prefix="/jobs")
-    app.register_blueprint(vars.get_vars, url_prefix="/default",
+    socketio = sockio.bind_socketio(app, path=urljoin(p, "socket.io"), **kws)
+
+    app.register_blueprint(jobs.jobs_bp, url_prefix=urljoin(p, "jobs"))
+    app.register_blueprint(vars.get_vars, url_prefix=urljoin(p, "default"),
                            url_defaults={"vtype": "default", "job": None})
     app.register_blueprint(
         vars.get_vars,
-        url_prefix="/jobs/<int:job>/<any(inputs, results):vtype>")
-    app.register_blueprint(vars.set_vars, url_prefix="/default")
+        url_prefix=urljoin(p, "jobs/<int:job>/<any(inputs, results):vtype>"))
+    app.register_blueprint(vars.set_vars, url_prefix=urljoin(p, "default"))
 
     # As a side effect this ensures that app.db and app.client are created.
     # If either one is going to fail, we want to know now.
