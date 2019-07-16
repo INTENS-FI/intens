@@ -5,7 +5,7 @@ metadata:
   labels:
     app: {{ template "simsvc.name" . }}
     release: {{ .Release.Name | quote }}
-    component: scheduler
+    component: server
 spec:
   replicas: {{ .Values.server.replicas }}
   selector:
