@@ -25,18 +25,19 @@ Comment: This is a Multimarkdown document.
 
 ## Tweaking the cluster & apps
 
-- Unless the Docker registry is public, Kubernetes cannot pull
-  (although `oc run-app` can).  This breaks Helm.  To fix, run
-  `oc-token.sh` (after logging in with `oc login`).
-  Unfortunately the token changes periodically, forcing you to
-  run the script again.  It should be possible to fix this with
-  RBAC instead of using a secret but I cannot get that to work.
+- Unless the Docker registry is public, Kubernetes and thus Helm
+  cannot pull from it directly.  However, it can pull from image
+  streams, which OpenShift automatically creates when you push to the
+  integrated registry.  It appears necessary to run `oc set
+  image-lookup`.  After that `image: <stream name>:<tag>` appears to
+  work in container specs.  You can use `is` short for `imagestream`
+  in commands, e.g., `oc get is`.
 - OpenShift [does not run containers as root][img-guide].  It uses a
   generated non-zero UID, which cannot be referenced from Dockerfile.
   File permissions can be arranged via GID, which is always zero
   (root group).
 - The Helm charts `stable/nginx-ingress` and `stable/cert-manager`
-  don't seem to work.  However, Openshift has some of their
+  don't seem to work.  However, OpenShift has some of their
   functionality built in, albeit with a different API (route instead
   of ingress).  Notably absent are [path][rewrite1]
   [rewriting][rewrite2] and [HTTP authentication][auth].

@@ -1,7 +1,9 @@
 #!/bin/sh -e
 # Set up an image pull secret using the OpenShift access token.
-# This appears necessary for using Helm on rahti.csc.fi.
+# This lets Kubernetes pull from the registry directly.
 # The token changes frequently, forcing you to run this again.
+# It seems you don't need this for pulling image streams, thus it
+# is likely best to use those instead.
 
 sname=rahti-reg
 reg=docker-registry.rahti.csc.fi
