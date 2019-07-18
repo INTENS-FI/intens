@@ -26,20 +26,22 @@ Comment: This is a Multimarkdown document.
 ## Tweaking the cluster & apps
 
 - Unless the Docker registry is public, Kubernetes cannot pull
-  (although `oc run-app` can).  This breaks Helm.  To fix:
-    ```
-    kubectl create secret docker-registry intens-reg \
-        --docker-server=docker-registry.rahti.csc.fi --docker-username=unused \
-        --docker-password=<token from registry console>
-    kubectl patch sa default -p '{"imagePullSecrets": [{"name": "intens-reg"}]}'
-    ```
-- OpenShift [does not run containers as root or the user specified by
-  the image][os-images].  It uses a generated non-zero UID, which
-  cannot be referenced from Dockerfile.  File permissions must be
-  arranged via GID, which is always zero (root group).
+  (although `oc run-app` can).  This breaks Helm.  To fix, run
+  `oc-token.sh` (after logging in with `oc login`).
+  Unfortunately the token changes periodically, forcing you to
+  run the script again.  It should be possible to fix this with
+  RBAC instead of using a secret but I cannot get that to work.
+- OpenShift [does not run containers as root][img-guide].  It uses a
+  generated non-zero UID, which cannot be referenced from Dockerfile.
+  File permissions can be arranged via GID, which is always zero
+  (root group).
 - The Helm charts `stable/nginx-ingress` and `stable/cert-manager`
-  don't seem to work.  However, Openshift should have their
+  don't seem to work.  However, Openshift has some of their
   functionality built in, albeit with a different API (route instead
-  of ingress).
+  of ingress).  Notably absent are [path][rewrite1]
+  [rewriting][rewrite2] and [HTTP authentication][auth].
 
-[os-images]: https://docs.openshift.com/container-platform/4.1/creating_images/guidelines.html
+[img-guide]: https://docs.openshift.com/container-platform/3.11/creating_images/guidelines.html
+[rewrite1]: https://github.com/openshift/origin/issues/19501
+[rewrite2]: https://github.com/openshift/origin/issues/20474
+[auth]: https://github.com/openshift/origin/issues/20324
