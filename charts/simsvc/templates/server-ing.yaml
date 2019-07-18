@@ -4,9 +4,6 @@ metadata:
   name: {{ template "simsvc.fullname" . }}-ingress
   annotations:
     certmanager.k8s.io/cluster-issuer: {{ .Values.server.clusterIssuer }}
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/proxy-redirect-from: "~^http://[^/]+/(.*)"
-    nginx.ingress.kubernetes.io/proxy-redirect-to: "/{{ .Release.Name }}/$1"
     nginx.ingress.kubernetes.io/auth-type: basic
     nginx.ingress.kubernetes.io/auth-secret: {{ .Values.server.pwsecret }}
     nginx.ingress.kubernetes.io/auth-realm: {{ .Release.Name }}

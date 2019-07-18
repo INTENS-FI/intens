@@ -41,6 +41,8 @@ spec:
             - name: WORK_DIR
               value: {{ if .Values.work.storageClass -}} "/work"
               {{- else -}} "" {{- end }}
+            - name: SIMSVC_ROOT
+              value: /{{ .Release.Name }}/
           volumeMounts:
             {{- if .Values.work.storageClass }}
             - mountPath: "/work"
