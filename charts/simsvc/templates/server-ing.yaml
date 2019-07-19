@@ -1,3 +1,4 @@
+{{ if and .Values.server.host (not .Values.openShift) -}}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -20,3 +21,4 @@ spec:
   - hosts:
     - {{ .Values.server.host }}
     secretName: {{ .Values.server.host }}-cert
+{{ end -}}

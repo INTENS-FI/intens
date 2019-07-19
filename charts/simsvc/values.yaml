@@ -1,14 +1,18 @@
 debug: false
+# openShift uses Route instead of Ingress
+openShift: true
 
 image:
-  repository: intens.azurecr.io/simsvc-mpt
+  repository: simsvc-mpt
   tag: latest
   # pullPolicy: IfNotPresent
   pullPolicy: Always
 
 server:
   replicas: 1
-  host: intens.westeurope.cloudapp.azure.com
+  host: intens.rahtiapp.fi
+  #whitelist of allowed IP addresses, empty for all.  Only used on OpenShift.
+  whitelist: 130.188.198.155
   clusterIssuer: intens-issuer
   pwsecret: intens-pw
   spec: {}
@@ -26,9 +30,11 @@ worker:
   spec: {}
 
 db:
-  storageClass: intens-work
+  # storageClass for db volume, "default" (don't specify) or "" (disable PV)
+  storageClass: default
   size: 5Gi
 
 work:
-  storageClass: intens-work
+  # storageClass for work volume, "default" (don't specify) or "" (disable PV)
+  storageClass: default
   size: 5Gi

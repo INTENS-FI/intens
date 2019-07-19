@@ -6,7 +6,9 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+  {{ if ne .Values.db.storageClass "default" -}}
   storageClassName: {{ .Values.db.storageClass }}
+  {{ end -}}
   resources:
     requests:
       storage: {{ .Values.db.size }}

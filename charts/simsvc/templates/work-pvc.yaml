@@ -6,7 +6,9 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
+  {{ if ne .Values.work.storageClass "default" -}}
   storageClassName: {{ .Values.work.storageClass }}
+  {{ end -}}
   resources:
     requests:
       storage: {{ .Values.work.size }}
