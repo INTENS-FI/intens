@@ -21,7 +21,8 @@ Comment: This is a Multimarkdown document.
   docker and oc login commands with the access tokens.
 - Install Helm.  It is [a bit
   complicated](https://blog.openshift.com/getting-started-helm-openshift/)
-  on OpenShift.
+  for Helm 2 on OpenShift.  Helm 3 is simpler because it does not
+  require anything on the cluster (tiller is gone).
 
 ## Tweaking the cluster & apps
 
@@ -35,12 +36,16 @@ Comment: This is a Multimarkdown document.
 - OpenShift [does not run containers as root][img-guide].  It uses a
   generated non-zero UID, which cannot be referenced from Dockerfile.
   File permissions can be arranged via GID, which is always zero
-  (root group).
+  (root group).  To do this, build the Simsvc base image with
+  `make SIMSVC_USER=nobody:0 PERM=ug+rwx` in the `server` directory.
 - The Helm charts `stable/nginx-ingress` and `stable/cert-manager`
   don't seem to work.  However, OpenShift has some of their
   functionality built in, albeit with a different API (route instead
   of ingress).  Notably absent are [path][rewrite1]
-  [rewriting][rewrite2] and [HTTP authentication][auth].
+  [rewriting][rewrite2] and [HTTP authentication][auth].  Simsvc
+  has been modified to work without path rewriting but still does not
+  do authentication.  There is only IP address whitelisting for now
+  (`server.whitelist` in the values file).
 
 [img-guide]: https://docs.openshift.com/container-platform/3.11/creating_images/guidelines.html
 [rewrite1]: https://github.com/openshift/origin/issues/19501
