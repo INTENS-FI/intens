@@ -43,9 +43,10 @@ Comment: This is a Multimarkdown document.
   functionality built in, albeit with a different API (route instead
   of ingress).  Notably absent are [path][rewrite1]
   [rewriting][rewrite2] and [HTTP authentication][auth].  Simsvc
-  has been modified to work without path rewriting but still does not
-  do authentication.  There is only IP address whitelisting for now
-  (`server.whitelist` in the values file).
+  has been modified to work without path rewriting and to support
+  HTTP basic authentication.  Handling TLS termination in the router
+  and authentication in the back end causes passwords to be
+  transmitted unencrypted but only in the cluster internal network.
 
 [img-guide]: https://docs.openshift.com/container-platform/3.11/creating_images/guidelines.html
 [rewrite1]: https://github.com/openshift/origin/issues/19501
