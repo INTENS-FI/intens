@@ -18,10 +18,13 @@ def create_app(**kws):
 
     from .tasks import TaskFlask
     from .config import Config
+    from .auth import Auth
     from . import sockio, jobs, vars
 
     app = TaskFlask(__name__)
     app.config.from_object(Config)
+
+    auth = Auth(app)
 
     p = app.config['SIMSVC_ROOT']
 

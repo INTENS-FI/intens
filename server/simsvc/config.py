@@ -19,3 +19,7 @@ class Config(object):
     """The job database URL, parsed by zodburi.
     The default is file storage simsvc.fs in the current directory.
     """
+
+    HTPASSWD_FILE = os.environ.get("HTPASSWD_FILE", None)
+    """An optional htpasswd file to enable authentication.
+    """
