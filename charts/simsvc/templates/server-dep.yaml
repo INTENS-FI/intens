@@ -43,6 +43,10 @@ spec:
               {{- else -}} "" {{- end }}
             - name: SIMSVC_ROOT
               value: /{{ .Release.Name }}/
+            {{- if .Values.openShift }}
+            - name: HTPASSWD_FILE
+              value: "/htpasswd/auth"
+            {{- end }}
           volumeMounts:
             {{- if .Values.work.storageClass }}
             - mountPath: "/work"
@@ -51,6 +55,10 @@ spec:
             {{- if .Values.db.storageClass }}
             - mountPath: "/db"
               name: db
+            {{- end }}
+            {{- if .Values.openShift }}
+            - mountPath: "/htpasswd"
+              name: htpasswd
             {{- end }}
       volumes:
         {{- if .Values.work.storageClass }}
@@ -62,6 +70,11 @@ spec:
         - name: db
           persistentVolumeClaim:
             claimName: {{ template "simsvc.fullname" . }}-db
+        {{- end }}
+        {{- if .Values.openShift }}
+        - name: htpasswd
+          secret:
+            secretName: {{ .Values.server.pwsecret }}
         {{- end }}
       {{- if .Values.server.spec }}
 {{ toYaml .Values.server.spec | indent 6 }}

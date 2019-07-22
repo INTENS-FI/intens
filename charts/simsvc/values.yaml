@@ -12,7 +12,8 @@ server:
   replicas: 1
   host: intens.rahtiapp.fi
   #whitelist of allowed IP addresses, empty for all.  Only used on OpenShift.
-  whitelist: 130.188.198.155
+  whitelist: ""
+  #clusterIssuer for cert-manager.  Not used on OpenShift.
   clusterIssuer: intens-issuer
   pwsecret: intens-pw
   spec: {}
