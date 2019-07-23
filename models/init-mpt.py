@@ -46,7 +46,7 @@ async def put(sess, base, name, val, ssl=None):
 
 async def send(mean, cov, addr=None, af=None, base_url=None, ssl=None):
     kws = {}
-    if af == AF.AF_UNIX:
+    if hasattr(AF, 'AF_UNIX') and af == AF.AF_UNIX:
         kws['connector'] = aiohttp.UnixConnector(addr)
         base = "http://localhost/" if base_url is None else base_url
     else:
@@ -73,7 +73,7 @@ if __name__ == '__main__':
                    help="Simsvc base URL (with slash in the end)")
     args = p.parse_args()
     addr, af = addrstr(astr)
-    if args.url is None or af == AF.AF_UNIX:
+    if args.url is None or af != AF.AF_INET:
         logger.info("Connecting to addr=%s, af=%s", addr, af)
     sslc = False if args.trust else ssl.create_default_context(
         cafile=args.cafile)
