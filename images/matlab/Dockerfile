@@ -1,9 +1,10 @@
 # Intermediate image for Simsvc with Matlab runtime.
-# Build-arg base is a base image, mcr is Matlab runtime zip package,
+# Build-arg base is a base image, assumed to be Debian or its variant
+# (uses apt-get).  mcr is a Matlab runtime zip package,
 # ver is the subdirectory where its installer actually installs: we
 # tell it to install in /mcr but it installs in /mcr/$ver.
 # Env. var. MCR will be set to /mcr/$ver.  User will be left as
-# env.var. SIMSVC_USER, default root.
+# env. var. SIMSVC_USER, default root.
 
 ARG base
 ARG build_base=$base

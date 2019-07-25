@@ -20,13 +20,13 @@ optimization framework) of the INTENS project.  Notable files:
 
 The `server` directory contains a web microserver for parallel
 execution of simulations.  It needs a model to run.  For testing you
-can symlink (or copy if on Windows) one of the example to
+can symlink (or copy if on Windows) one of the examples to
 `server/model.py` or `server/model` depending if it is a module or a
 package).  Other arrangements are possible: the server just imports
 `task` from `model`.
 
 See `setup.py` for library requirements.  These are for the server;
-the test script `sio-client.py` also requires `socketIO-client`.
+the test script `sio-test.py` also requires `socketIO-client`.
 
 Once a model has been provided, `python3 -m simsvc` starts the service,
 running it on the Eventlet WSGI server.  Other WSGI servers can be used
@@ -48,14 +48,14 @@ available, thus providing the whole service in a single container.
 
 By default the server listens at `http://localhost:8080/` if executed
 outside Docker.  The Docker image listens at port 8080 on all
-interfaces of the container.  There is no authentication or any other
-attempt at security, so do not change it to listen actual network
-interfaces unless you are very well firewalled.  On a multi-user
-machine you may want to use a Unix domain socket instead, although
-that limits your server and client options.  The runnable simsvc
-package supports Unix domain sockets but, e.g., Java doesn't.
-Production deployments should be secured behind an ingress server,
-which handles SSL and authentication.
+interfaces of the container.  The default is no authentication.  HTTP
+basic authentication can be enabled by providing a htpasswd file and
+pointing `HTPASSWD_FILE` to it.  That should be OK for localhost on
+multi-user machines but vulnerable to eavesdropping over actual
+networks.  Unix domain sockets are also somewhat supported: the
+runnable `simsvc` package supports them but, e.g., Java doesn't.
+Production deployments should be secured behind an ingress server that
+handles SSL and authentication.
 
 ## The Opt4J client
 

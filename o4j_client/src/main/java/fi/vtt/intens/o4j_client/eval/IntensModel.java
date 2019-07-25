@@ -80,7 +80,6 @@ public class IntensModel implements SimulationModel {
     @Override
     @JsonIgnore
     public byte[] getOverviewImageData() {
-        // TODO Auto-generated method stub
         return null;
     }
 
