@@ -26,5 +26,7 @@ RUN apt-get update && apt-get install -y libxt6
 ARG ver
 # No idea what the second var is, but it seems to be required.
 ENV MCR=/mcr/$ver MCR_CACHE_ROOT=/tmp/mcr-cache
+ENV LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$MCR/runtime/glnxa64\
+:$MCR/bin/glnxa64:$MCR/sys/os/glnxa64:$MCR/sys/opengl/lib/glnxa64
 
 USER ${SIMSVC_USER:-root}
