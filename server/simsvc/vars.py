@@ -24,6 +24,11 @@ def _get_vars(st, vt=Vtype.default, job=None):
         if vt == Vtype.inputs:
             return j.inputs
         elif vt == Vtype.results:
+            if j.status != db.Job_status.DONE:
+                raise (wexc.ServiceUnavailable if j.status.active()
+                       else wexc.Gone)(
+                    "Job %s results unavailable (status %s)"
+                    % (job, j.status.name))
             return j.results
         else:
             raise ValueError("Unknown vtype %s" % vt)
