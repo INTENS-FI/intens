@@ -26,7 +26,8 @@ Comment: This is a Multimarkdown document.
   listed job ids.  It is not an error if some of the listed jobs do not exist:
   such ids are simply omitted from the output.
 - POST defines a new job, returns `201 Created` with `Location` header
-  and *id* in body.  Request content is input values.
+  and *id* in body.  Request content is input values.  They are merged
+  with the defaults, posted values taking precedence.
 - DELETE deletes all jobs.
 
 #### `jobs/`*id*
@@ -36,10 +37,7 @@ Comment: This is a Multimarkdown document.
 
 ##### `jobs/`*id*`/inputs/`
 
-- Access to input values.  Works like `default/` but read only.  Two
-  possibilities:
-    1. the defaults are copied here when job is created, or
-    2. it is not permitted to modify defaults while jobs exist.
+- Access to input values.  Works like `default/` but read only.
 
 ##### `jobs/`*id*`/error`
 
@@ -50,9 +48,9 @@ Comment: This is a Multimarkdown document.
 
 - Access to simulation results.  Works like `default/` but read only.
 - Only available if status is done.
-- Accessing results before simulation finishes either returns 404 (or
-  maybe 409 Conflict or 503 Service unavailable) or waits.
-- Accessing results of failed computations returns 404 or maybe 410 Gone.
+- Accessing results of unfinished computations returns 503 Service
+  unavailable or waits.
+- Accessing results of unsuccesful computations returns 410 Gone.
 
 ##### `jobs/`*id*`/files/`*path*
 
@@ -84,7 +82,8 @@ Comment: This is a Multimarkdown document.
   arrays (nested).
 - Job statuses:
     * SCHEDULED: waiting to start
-    * RUNNING: started, log available
+    * RUNNING: started (optional: the server may also report running
+      jobs as SCHEDULED if it cannot distinguish between the two states)
     * DONE: succesful termination, results available
     * CANCELLED: trying to stop it, will delete once stopped
     * FAILED: terminated in error, no results
