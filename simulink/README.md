@@ -1,8 +1,11 @@
+Title: Converting Simulink models to FMUs
+Author: Timo Korvola
+
 # Converting Simulink models to FMUs
 
 ## Prerequisites
 
-- Matlab, Simulink and Simulink Coder (req. Matlab Coder)
+- Matlab, Simulink and Simulink Coder
 - [Simulix][] and its requirements (Python 3, lxml, CMake and a C
   Compiler).  You'll need to patch [this
   bug](https://github.com/Kvixen/Simulix/issues/27).
