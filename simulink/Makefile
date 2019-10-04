@@ -8,7 +8,12 @@ MODEL = model
 
 # Matlab executable and flags
 MAT = matlab
-MATFLAGS = 
+MATFLAGS =
+
+# Setup Matlab script.  If provided, executed before code generation using
+# the Matlab run function.  In particular, Matlab temporarily changes to
+# the directory of the script for its execution.
+MAT_SETUP =
 
 # Simulix executable and flags.
 SIMULIX = python3 $(HOME)/src/Simulix/Simulix.py
@@ -34,5 +39,6 @@ clean:
 	$(SIMULIX) $(SXFLAGS) -p $*_fmu $*
 	mv $*_fmu/$(@F) $@
 
-%.zip: %.slx build_rtw.m
-	SL_MODEL="$*" $(MAT) $(MATFLAGS) -batch build_rtw
+%.zip: %.slx $(MAT_SETUP) build_rtw.m
+	MAT_SETUP="$(MAT_SETUP)" SL_MODEL="$*" \
+		$(MAT) $(MATFLAGS) -batch build_rtw
