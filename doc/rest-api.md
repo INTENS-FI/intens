@@ -6,6 +6,9 @@ Comment: This is a Multimarkdown document.
 
 ## HTTP requests
 
+All URLs are relative to the environment variable `SIMSVC_ROOT` on the
+server, default `/`.
+
 ### `default/`
 
 - GET returns the names of defined defaults as a list.  With
@@ -21,9 +24,10 @@ Comment: This is a Multimarkdown document.
 
 ### `jobs/`
 
-- GET returns list of defined jobs (names only, `?status=true` to
-  return also statuses).  `?only=id1,id2,...` restricts output to the
-  listed job ids.  It is not an error if some of the listed jobs do not exist:
+- GET returns the list of defined job ids.  With `?status=true`
+  returns also statuses as a JSON object with ids as keys (converted
+  to strings).  `?only=id1,id2,...` restricts output to the listed job
+  ids.  It is not an error if some of the listed jobs do not exist:
   such ids are simply omitted from the output.
 - POST defines a new job, returns `201 Created` with `Location` header
   and *id* in body.  Request content is input values.  They are merged
@@ -33,7 +37,7 @@ Comment: This is a Multimarkdown document.
 #### `jobs/`*id*
 
 - GET returns status
-- DELETE cancels and removes all persistent resources.
+- DELETE cancels the job and removes its persistent resources.
 
 ##### `jobs/`*id*`/inputs/`
 
@@ -92,9 +96,12 @@ Comment: This is a Multimarkdown document.
 ## Socket.IO API
 
 - Experimental, even more so than HTTP.
+- The Socket.IO URL is also relative to `SIMSVC_ROOT` (`socket.io`
+  under it).  This may require configuration in the client unless
+  `SIMSVC_ROOT` is `/` (and there is no path rewriting).
 - The server emits task-related events:
-    * `launched` jobid,
-    * `terminated {"job":` jobid, `"status":` st`}` where st is
+    * `launched` *jobid*,
+    * `terminated {"job":` *jobid*, `"status":` *st*`}` where *st* is
       `"done"`, `"failed"` or `"cancelled"`.
 - Later versions may introduce also commands.  Currently this is just
   server to client; client to server goes over HTTP.

@@ -1,5 +1,5 @@
 debug: false
-# openShift uses Route instead of Ingress
+# openShift uses Route instead of Ingress.
 openShift: true
 
 image:

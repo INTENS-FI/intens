@@ -4,7 +4,7 @@
 We use cov = R * Sigma^2 * R' where R is a random rotation
 (Haar measure on SO(n), special_ortho_group from scipy.stats)
 and Sigma is diagonal with independent standard normal components.
-mean is likewise assumed standard normal, independent components.
+mean is also standard normal, independent components.
 
 simsvc must be in PYTHONPATH.  Requires Numpy, Scipy and AIOHTTP
 (used here because it supports Unix domain sockets).
