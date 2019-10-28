@@ -26,15 +26,18 @@ import javax.net.ssl.X509TrustManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import eu.cityopt.sim.eval.Evaluator;
 import eu.cityopt.sim.eval.SimulationFailure;
 import eu.cityopt.sim.eval.SimulationInput;
 import eu.cityopt.sim.eval.SimulationResults;
 import eu.cityopt.sim.eval.SimulationRunner;
+import eu.cityopt.sim.eval.TimeSeriesI;
 import eu.cityopt.sim.eval.Type;
 import io.socket.client.IO;
 import io.socket.client.Socket;
@@ -166,13 +169,60 @@ public class IntensRunner implements SimulationRunner {
         }
     }
 
+    private class TimeSeriesParser {
+        Evaluator ev;
+        ObjectNode root;
+        Map<String, double[]> times = new HashMap<>();
+
+        TimeSeriesParser(Evaluator ev, ObjectNode root) {
+            this.ev = ev;
+            this.root = root;
+        }
+
+        synchronized double[] getTimes(String tnam) throws IOException {
+            double[] t = times.get(tnam);
+            if (t == null) {
+                var tn2 = root.get(tnam);
+                if (tn2 == null)
+                    throw new IllegalArgumentException(
+                            "Referenced time values missing: "
+                            + tnam);
+                t = om.treeToValue(tn2, double[].class);
+                times.put(tnam, t);
+            }
+            return t;
+        }
+
+        TimeSeriesI parse(Type type, JsonNode val) throws IOException {
+            ObjectNode obj;
+            try {
+                obj = (ObjectNode)val;
+            } catch (ClassCastException e) {
+                throw new IllegalArgumentException(
+                        "Time series not a JSON object", e);
+            }
+            JsonNode
+                tn = obj.get("times"),
+                vn = obj.get("values");
+            if (tn == null || vn == null)
+                throw new IllegalArgumentException(
+                        "Times or values missing from time series");
+            double[]
+                t = tn.isArray()
+                    ? om.treeToValue(tn, double[].class)
+                    : getTimes(om.treeToValue(tn, String.class)),
+                vals = om.treeToValue(val, double[].class);
+            return ev.makeTS(type, t, vals);
+        }
+    }
+
     /**
      * Attempt to parse a JsonNode as a sim-eval type.
      * @throws JsonProcessingException if json is of incompatible type
      * @throws IllegalArgumentException if elements of json are of incompatible
      *   type (when parsing a list) or if type is unsupported.
      */
-    private Object parseResult(Type type, JsonNode json)
+    private Object parseResult(Type type, JsonNode json, TimeSeriesParser tsp)
             throws IOException {
         switch (type) {
         case DOUBLE:
@@ -191,6 +241,9 @@ public class IntensRunner implements SimulationRunner {
                 throw new IllegalArgumentException(
                         "Incompatible list for " + type + ": " + json);
             return val;
+        case TIMESERIES_LINEAR:
+        case TIMESERIES_STEP:
+            return tsp.parse(type, json);
         default:
             throw new IllegalArgumentException("Unsupported type " + type);
         }
@@ -218,6 +271,7 @@ public class IntensRunner implements SimulationRunner {
             if (resp.code() != HTTP_OK)
                 throw new HttpException(resp);
             var root = (ObjectNode)om.readTree(resp.body().charStream());
+            var tsp = new TimeSeriesParser(res.getNamespace().evaluator, root);
             for (var comp_kv : ns.components.entrySet()) {
                 String comp = comp_kv.getKey();
                 for (var out_kv : comp_kv.getValue().outputs.entrySet()) {
@@ -230,7 +284,7 @@ public class IntensRunner implements SimulationRunner {
                                 "Missing value from response: "+ qname);
                     else
                         res.put(comp, out,
-                                parseResult(out_kv.getValue(), val));
+                                parseResult(out_kv.getValue(), val, tsp));
                 }
             }
         } catch (ClassCastException e) {
