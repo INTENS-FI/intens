@@ -10,7 +10,7 @@ from dask.distributed import Client, Variable, fire_and_forget, TimeoutError
 
 from . import db
 
-from model import task
+import model
 
 def timeout_kluge(f, logger=None):
     """Return f(), handle IOErrors.
@@ -99,11 +99,15 @@ class TaskFlask(db.DBFlask):
         """
         while True:
             try:
-                return timeout_kluge(
+                cli = timeout_kluge(
                     lambda: Client(timeout=60, direct_to_workers=True),
                     s.logger)
+                break
             except TimeoutError:
                 s.logger.warning("Scheduler connection timed out; retrying")
+        if hasattr(model, 'worker_callback'):
+            cli.register_worker_callbacks(model.worker_callback)
+        return cli
 
     def flush_updates(s, conn=None):
         """Perform any scheduled database updates.
@@ -238,7 +242,7 @@ class TaskFlask(db.DBFlask):
         canc = Bogo_var()
         canc.set(False)
         spec = Task_spec(jid, job)
-        fut = s.client.compute(task(spec, canc))
+        fut = s.client.compute(model.task(spec, canc))
         s.tasks[jid] = fut, canc
         job.status = db.Job_status.SCHEDULED
         fut.add_done_callback(lambda f: s.task_done(jid, f))

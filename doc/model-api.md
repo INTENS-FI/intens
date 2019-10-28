@@ -4,6 +4,8 @@ Comment: This is a Multimarkdown document.
 
 # Intens simulation model API
 
+## The main entry point: model.task
+
 The simulation model is provided as a Python function
 `model.task(spec, cancel)`, where `spec` is an instance of
 `simsvc.tasks.Task_spec` and `cancel` is a
@@ -67,3 +69,8 @@ creates a subprocess, e.g., for running an external simulator, it may
 of course manipulate the state of that subprocess.
 
 [runtime tasks]: https://distributed.readthedocs.io/en/latest/task-launch.html
+
+## Hooks
+
+If `model.worker_callback` is defined, it is registered as a worker
+callback.  See `distributed.Client.register_worker_callbacks`.
