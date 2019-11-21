@@ -600,7 +600,7 @@ public class IntensRunner implements SimulationRunner {
 //        om.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
 //        var body = new FunctionalBody(json_mt,
 //                                      out -> om.writeValue(out, binds));
-        var body = RequestBody.create(json_mt, om.writeValueAsString(binds));
+        var body = RequestBody.create(om.writeValueAsString(binds), json_mt);
         var req = new Request.Builder().url(uri).post(body).build();
         int jobid;
         for (;;) {
