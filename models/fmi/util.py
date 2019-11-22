@@ -1,6 +1,16 @@
 """FMI support utilities
 """
 
+import re
+
+def sanitise(name):
+    """Convert name into a valid identifier.
+    """
+    res = re.sub(r"\[(\d+)]$", r"_\1", name)
+    res = re.sub(r"\W+", r"_", res)
+    res = re.sub(r"^(\d)", r"_\1", res)
+    return "o." + res
+
 def serialise_results(recs, out=None):
     """Convert FMPy simulation results to a JSON serialisable form.
 
@@ -13,7 +23,7 @@ def serialise_results(recs, out=None):
     immutable).
     """
     res = {} if out is None else out
-    res['time'] = tuples(recs['time'])
-    res.update((k, {'times': 'time', 'values': tuples(recs[k])})
-               for k in res.dtype.names if k != 'time')
+    res['time'] = tuple(recs['time'])
+    res.update((sanitise(k), {'times': 'time', 'values': tuple(recs[k])})
+               for k in recs.dtype.names if k != 'time')
     return res
