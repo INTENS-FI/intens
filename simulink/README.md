@@ -36,9 +36,9 @@ with an index (1-based) in brackets appended to the port name.
 
 Scopes seem to get harmlessly ignored, probably other widgets as well.
 
-For each parameter that should be visible in the FMU, create a model
-workspace variable with value `Simulink.Parameter(`x`)` where x is the
-default value.  Set its storage class to `ExportedGlobal`.  It should
+For each parameter that should be visible in the FMU, open the model
+explorer and create a new parameter in the model workspace (not base
+workspace).  Set its storage class to `ExportedGlobal`.  It should
 show up in the interface report when you build and end up in the FMU
 with the name of the variable.
 
