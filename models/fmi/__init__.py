@@ -10,46 +10,25 @@ process_results(recs, out)	Read simulation results from the structured
 	.util.serialise_results.
 """
 
-import os, tempfile, atexit
 import dask, fmpy
 
-tmp = fmu = None
-
-try:
-    from .custom import process_results
-except ImportError:
-    from .util import serialise_results as process_results
-
-def cleanup():
-    if tmp is not None:
-        tmp.cleanup()
-    tmp = fmu = None
-
 def worker_callback():
-    """Unpack the model into a temporary directory.
-
-    The model file is given by the environment variable MODEL_FMU
-    (full path), default model.fmu in the package directory.  This
-    sets module variables tmp and fmu to point at a newly created
-    tempfile.TemporaryDirectory and the extracted fmu, respectively.
-    It also registers an atexit hook to remove tmp.
-    """
-    global tmp, fmu
-    atexit.register(cleanup)
-    if tmp is None:
-        tmp = tempfile.TemporaryDirectory()
-    if fmu is None:
-        f = os.getenv("MODEL_FMU") or os.path.join(os.path.dirname(__file__),
-                                                   "model.fmu")
-        fmu = fmpy.extract(f, tmp.name)
+    from model.fmu_unpack import unpack_model
+    unpack_model()
 
 @dask.delayed
 def task(spec, cancel):
-    t0 = t1 = Nome
+    # Relative import does not work here.
+    try:
+        from model.custom import process_results
+    except ImportError:
+        from model.util import serialise_results as process_results
+    from model.fmu_unpack import fmu
+    t0 = t1 = None
     pars = {}
     unk = []
     warn = ""
-    for k, v in spec.items():
+    for k, v in spec.inputs.items():
         if k == "CITYOPT.simulation_start":
             t0 = v
         elif k == "CITYOPT.simulation_end":
