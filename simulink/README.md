@@ -50,6 +50,10 @@ beginning for parameters: you'll need to set at least `MODEL`, e.g.,
 in the same directory as the input model.  Simulix produces version
 2.0 cosimulation FMUs.
 
+If you are working interactively in Simulink you can also build a zip
+package from there (Ctrl-B) and run make afterwards to build from zip
+to FMU.
+
 For simulation I have used [FMPy][].  It is rather rudimentary and
 somewhat buggy.  It is simple to install though, as its dependencies
 are few and readily available.

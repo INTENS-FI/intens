@@ -30,8 +30,9 @@ server, default `/`.
   ids.  It is not an error if some of the listed jobs do not exist:
   such ids are simply omitted from the output.
 - POST defines a new job, returns `201 Created` with `Location` header
-  and *id* in body.  Request content is input values.  They are merged
-  with the defaults, posted values taking precedence.
+  and *id* in body.  The request content is input values as a JSON
+  object.  They are merged with the defaults, posted values taking
+  precedence.
 - DELETE deletes all jobs.
 
 #### `jobs/`*id*
