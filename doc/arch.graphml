@@ -46,10 +46,10 @@
         <node id="n0::n0">
           <data key="d6">
             <y:ShapeNode>
-              <y:Geometry height="39.19350051879883" width="65.0260009765625" x="190.06099853515627" y="65.25213165283202"/>
+              <y:Geometry height="39.19350051879883" width="65.0260009765625" x="184.0697021484375" y="73.25213165283202"/>
               <y:Fill color="#FFCC00" transparent="false"/>
               <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="node_width" configuration="CroppingLabel" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="34.125" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="65.0260009765625" x="0.0" xml:space="preserve" y="2.534250259399414">Route server</y:NodeLabel>
+              <y:NodeLabel alignment="center" autoSizePolicy="node_width" configuration="CroppingLabel" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="34.125" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="65.0260009765625" x="0.0" xml:space="preserve" y="2.534250259399414">OpenShift router</y:NodeLabel>
               <y:Shape type="roundrectangle"/>
             </y:ShapeNode>
           </data>
@@ -242,7 +242,7 @@ Opt4J<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mode
           <y:Path sx="0.0" sy="0.0" tx="1.4210854715202004E-13" ty="0.0"/>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="none"/>
-          <y:EdgeLabel alignment="center" anchorX="2.0109143229054496" anchorY="16.782442481154746" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="32.125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#000000" upX="0.196053354940353" upY="-0.9805932296404213" verticalTextPosition="bottom" visible="true" width="61.12890625" x="2.0109143229054496" xml:space="preserve" y="-14.719115021043788">REST &amp; ws
+          <y:EdgeLabel alignment="center" anchorX="-0.6196819084601941" anchorY="16.482608257141592" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="32.125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#000000" upX="0.2637293351084177" upY="-0.9645967228864464" verticalTextPosition="bottom" visible="true" width="61.12890625" x="-0.6196819084601941" xml:space="preserve" y="-14.505061465585499">REST &amp; ws
 over SSL<y:LabelModel><y:SmartEdgeLabelModel autoRotationEnabled="true" defaultAngle="0.0" defaultDistance="10.0"/></y:LabelModel><y:ModelParameter><y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="10.0" distanceToCenter="false" position="center" ratio="0.0" segment="0"/></y:ModelParameter><y:PreferredPlacementDescriptor angle="1.5707963267948966" angleOffsetOnRightSide="0" angleReference="relative_to_edge_flow" angleRotationOnRightSide="co" distance="-1.0" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/></y:EdgeLabel>
           <y:BendStyle smoothed="false"/>
         </y:PolyLineEdge>
@@ -255,7 +255,7 @@ over SSL<y:LabelModel><y:SmartEdgeLabelModel autoRotationEnabled="true" defaultA
           <y:Path sx="0.0" sy="0.0" tx="-1.1368683772161603E-13" ty="0.0"/>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="none"/>
-          <y:EdgeLabel alignment="center" anchorX="-0.6151237836617156" anchorY="16.672154691893184" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="32.125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#000000" upX="0.3056081887724441" upY="-0.9521573582949544" verticalTextPosition="bottom" visible="true" width="61.12890625" x="-0.6151237836617156" xml:space="preserve" y="-13.915900443332227">REST &amp; ws
+          <y:EdgeLabel alignment="center" anchorX="2.86449723001337" anchorY="17.28127785912079" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="32.125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#000000" upX="0.24365596874862658" upY="-0.9698617266874533" verticalTextPosition="bottom" visible="true" width="61.12890625" x="2.86449723001337" xml:space="preserve" y="-13.875530110713644">REST &amp; ws
 (no SSL)<y:LabelModel><y:SmartEdgeLabelModel autoRotationEnabled="true" defaultAngle="0.0" defaultDistance="10.0"/></y:LabelModel><y:ModelParameter><y:SmartEdgeLabelModelParameter angle="0.0" distance="30.0" distanceToCenter="true" position="center" ratio="0.0" segment="0"/></y:ModelParameter><y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/></y:EdgeLabel>
           <y:BendStyle smoothed="false"/>
         </y:PolyLineEdge>
