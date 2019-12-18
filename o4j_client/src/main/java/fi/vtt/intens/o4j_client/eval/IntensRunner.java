@@ -170,23 +170,31 @@ public class IntensRunner implements SimulationRunner {
     }
 
     private class TimeSeriesParser {
-        Evaluator ev;
-        ObjectNode root;
+        final Evaluator ev;
+        final ObjectNode root;
+        final HttpUrl res_url;
         Map<String, double[]> times = new HashMap<>();
 
-        TimeSeriesParser(Evaluator ev, ObjectNode root) {
+        TimeSeriesParser(
+                Evaluator ev, ObjectNode root, HttpUrl res_url) {
             this.ev = ev;
             this.root = root;
+            this.res_url = res_url;
         }
 
         synchronized double[] getTimes(String tnam) throws IOException {
             double[] t = times.get(tnam);
             if (t == null) {
                 var tn2 = root.get(tnam);
-                if (tn2 == null)
-                    throw new IllegalArgumentException(
-                            "Referenced time values missing: "
-                            + tnam);
+                if (tn2 == null) {
+                    var url = res_url.resolve(tnam);
+                    var req = new Request.Builder().url(url).build();
+                    try (var resp = http.newCall(req).execute()) {
+                        if (resp.code() != HTTP_OK)
+                            throw new HttpException(resp);
+                        tn2 = om.readTree(resp.body().charStream());
+                    }
+                }
                 t = om.treeToValue(tn2, double[].class);
                 times.put(tnam, t);
             }
@@ -211,7 +219,7 @@ public class IntensRunner implements SimulationRunner {
                 t = tn.isArray()
                     ? om.treeToValue(tn, double[].class)
                     : getTimes(om.treeToValue(tn, String.class)),
-                vals = om.treeToValue(val, double[].class);
+                vals = om.treeToValue(vn, double[].class);
             return ev.makeTS(type, t, vals);
         }
     }
@@ -263,15 +271,17 @@ public class IntensRunner implements SimulationRunner {
                     .flatMap(kv -> kv.getValue().outputs.keySet().stream().map(
                                      op -> kv.getKey() + "." + op))
                     .collect(Collectors.joining(","));
-        var uri = HttpUrl.get(model.uri)
-                .newBuilder("jobs/" + job.jobid + "/results/")
-                .addQueryParameter("only", only).build();
+        var bld = HttpUrl.get(model.uri)
+                .newBuilder("jobs/" + job.jobid + "/results/");
+        var res_url = bld.build();
+        var uri = bld.addQueryParameter("only", only).build();
         var req = new Request.Builder().url(uri).build();
         try (var resp = http.newCall(req).execute()) {
             if (resp.code() != HTTP_OK)
                 throw new HttpException(resp);
             var root = (ObjectNode)om.readTree(resp.body().charStream());
-            var tsp = new TimeSeriesParser(res.getNamespace().evaluator, root);
+            var tsp = new TimeSeriesParser(res.getNamespace().evaluator,
+                                           root, res_url);
             for (var comp_kv : ns.components.entrySet()) {
                 String comp = comp_kv.getKey();
                 for (var out_kv : comp_kv.getValue().outputs.entrySet()) {
