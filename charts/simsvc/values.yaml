@@ -32,7 +32,7 @@ worker:
 
 db:
   # storageClass for db volume, "default" (don't specify) or "" (disable PV)
-  storageClass: default
+  storageClass: standard-rwo
   size: 5Gi
 
 work:
