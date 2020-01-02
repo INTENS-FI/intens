@@ -83,6 +83,9 @@ server, default `/`.
   types of inputs and outputs.  Communicating that info is not part of
   this API.
 - Inputs and outputs can be any JSON types.
+- Special floating point values are repsresented as `Infinity`,
+  `-Infinity` and `NaN`.  Standard JSON has no representation for
+  these values.  This is an extension provided by Python.
 - Time series are not directly supported but can be passed as *n* by 2
   arrays (nested).
 - Job statuses:
