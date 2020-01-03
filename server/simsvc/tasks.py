@@ -7,6 +7,7 @@ import queue, sys, traceback as tb
 import flask
 from werkzeug.utils import cached_property
 from dask.distributed import Client, Variable, fire_and_forget, TimeoutError
+import dask.config
 
 from . import db
 
@@ -100,7 +101,7 @@ class TaskFlask(db.DBFlask):
         while True:
             try:
                 cli = timeout_kluge(
-                    lambda: Client(timeout=60, direct_to_workers=True),
+                    lambda: Client(**dask.config.get('simsvc.client-args')),
                     s.logger)
                 break
             except TimeoutError:

@@ -1,0 +1,13 @@
+# Default values for Dask config.
+
+simsvc:
+  cluster:
+    type: null
+    # Keyword args passed to cluster constructor.
+    args: {}
+    # Keyword args passed to cluster.adapt or false.
+    adapt: false
+  # Keyword args passed to client constructor.
+  client-args:
+    timeout: 60
+    direct_to_workers: true

@@ -1,4 +1,11 @@
+"""Simsvc configuration support.
+This is a bit of a mess because there is both Flask and Dask style config.
+Flask config is generally used for web server stuff and Dask config for
+distributed computation.
+"""
+
 import os
+import yaml, dask.config
 
 class Config(object):
     SIMSVC_ADDR = os.environ.get("SIMSVC_ADDR", "localhost:8080")
@@ -23,3 +30,12 @@ class Config(object):
     HTPASSWD_FILE = os.environ.get("HTPASSWD_FILE", None)
     """An optional htpasswd file to enable authentication.
     """
+
+config_file = os.path.join(os.path.dirname(__file__), "simsvc.yaml")
+
+def read_config_file():
+    with open(config_file) as f:
+        return yaml.load(f)
+
+dask.config.update_defaults(read_config_file())
+dask.config.ensure_file(source=config_file)

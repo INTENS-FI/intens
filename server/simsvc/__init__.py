@@ -1,6 +1,9 @@
 """Distributed simulation service.
 """
 
+# Ensure .config is loaded - it sets up our Dask config.
+from .config import Config
+
 def create_app(**kws):
     """Create and return the simulation server Flask app.
     
@@ -17,12 +20,11 @@ def create_app(**kws):
     from flask_socketio import SocketIO
 
     from .tasks import TaskFlask
-    from .config import Config
     from .auth import Auth
     from . import sockio, jobs, vars
 
     app = TaskFlask(__name__)
-    app.config.from_object(Config)
+    app.config.from_object(config.Config)
 
     auth = Auth(app)
 

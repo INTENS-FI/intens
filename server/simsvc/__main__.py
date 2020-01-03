@@ -7,8 +7,8 @@ not support AF_UNIX.
 import atexit
 from socket import AddressFamily as AF
 
-from simsvc import create_app
-from simsvc.util import addrstr, tryrm
+from . import create_app
+from .util import addrstr, tryrm
 
 if __name__ == '__main__':
     import eventlet
