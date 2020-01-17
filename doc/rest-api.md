@@ -86,8 +86,12 @@ server, default `/`.
 - Special floating point values are repsresented as `Infinity`,
   `-Infinity` and `NaN`.  Standard JSON has no representation for
   these values.  This is an extension provided by Python.
-- Time series are not directly supported but can be passed as *n* by 2
-  arrays (nested).
+- Time series are not directly supported but can be represented with
+  JSON types in some way agreed by the client and the model.
+  Currently FMI models and o4j_client represent a time series as a
+  JSON object with fields `times` and `values`.  `times` is either a
+  vector of time values or the name of a variable containing such a
+  vector.[^ind_time]  `values` as a vector of the same length.
 - Job statuses:
     * SCHEDULED: waiting to start
     * RUNNING: started (optional: the server may also report running
@@ -96,6 +100,10 @@ server, default `/`.
     * CANCELLED: trying to stop it, will delete once stopped
     * FAILED: terminated in error, no results
     * INVALID: somehow corrupt
+
+[^ind_time]: There are frequently multiple time series with the same
+time points.  This indirection allows passing the time vector only
+once.  Even so, serialising to JSON is rather inefficient.
 
 ## Socket.IO API
 
