@@ -6,12 +6,37 @@ import queue, sys, traceback as tb
 
 import flask
 from werkzeug.utils import cached_property
-from dask.distributed import Client, Variable, fire_and_forget, TimeoutError
+import dask.distributed as dd
 import dask.config
 
 from . import db
 
 import model
+
+def make_kube(pod_spec, **kws):
+    """Create a dask_kubernetes.KubeCluster.
+
+    pod_spec is either the name of a YAML file containg the worker pod
+    specification or a dict containing the specification directly.
+    kws is passed to KubeCluster.from_yaml or .from_dict.
+    """
+    from dask_kubernetes import KubeCluster
+    if isistance(pod_spec, str):
+        return KubeCluster.from_yaml(pod_spec, **kws)
+    else:
+        return KubeCluster.from_dict(pod_spec, **kws)
+
+def make_slurm(**kws):
+    """Create a dask_jobqueue.SLURMCluster.
+
+    kws is passed to the constructor.  This is just a simple wrapper
+    to avoid importing dask_jobqueue unless called.
+    """
+    from dask_jobqueue import SLURMCluster
+    return SLURMCluster(**kws)
+
+cluster_types = {'local': dd.LocalCluster, 'kubernetes': make_kube,
+                 'slurm': make_slurm}
 
 def timeout_kluge(f, logger=None):
     """Return f(), handle IOErrors.
@@ -26,7 +51,7 @@ def timeout_kluge(f, logger=None):
         if "timed out" in str(e).lower():
             if logger is not None:
                 logger.info("Apparent timeout detected.")
-            raise TimeoutError("Apparent timeout") from e
+            raise dd.TimeoutError("Apparent timeout") from e
         else:
             raise
 
@@ -49,7 +74,7 @@ class Task_spec(object):
 
 #XXX Can this actually be made to work somehow?
 class Bogo_var(object):
-    """Pretends to be a dask.distribute.Variable but is not actually shared.
+    """Pretends to be a dask.distributed.Variable but is not actually shared.
     """
     def __init__(s):
         s.value = None
@@ -95,16 +120,36 @@ class TaskFlask(db.DBFlask):
         s.monitor = None
 
     @cached_property
+    def cluster(s):
+        """Our Dask cluster or None if we were not configured to create one.
+        """
+        cltype = dask.config.get('simsvc.cluster.type')
+        if cltype is None:
+            return None
+        ctor = cluster_types.get(cltype)
+        if ctor is None:
+            raise KeyError("Unknown cluster type %s" % cltype)
+        clust = ctor(**dask.config.get('simsvc.cluster.args'))
+        ad = dask.config.get('simsvc.cluster.adapt')
+        if ad:
+            clust.adapt(**ad)
+        return clust
+
+    @cached_property
     def client(s):
         """Our Dask client
         """
+        def make_client():
+            args = dask.config.get('simsvc.client-args')
+            if s.cluster is None:
+                return dd.Client(**args)
+            else:
+                return dd.Client(s.cluster, **args)
         while True:
             try:
-                cli = timeout_kluge(
-                    lambda: Client(**dask.config.get('simsvc.client-args')),
-                    s.logger)
+                cli = timeout_kluge(make_client, s.logger)
                 break
-            except TimeoutError:
+            except dd.TimeoutError:
                 s.logger.warning("Scheduler connection timed out; retrying")
         if hasattr(model, 'worker_callback'):
             cli.register_worker_callbacks(model.worker_callback)
@@ -247,7 +292,7 @@ class TaskFlask(db.DBFlask):
         s.tasks[jid] = fut, canc
         job.status = db.Job_status.SCHEDULED
         fut.add_done_callback(lambda f: s.task_done(jid, f))
-        fire_and_forget(fut)
+        dd.fire_and_forget(fut)
         if s.monitor is not None:
             try:
                 s.monitor(jid, fut)
