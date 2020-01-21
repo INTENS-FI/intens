@@ -24,7 +24,7 @@ def create_app(**kws):
     from . import sockio, jobs, vars
 
     app = TaskFlask(__name__)
-    app.config.from_object(config.Config)
+    app.config.from_object(Config)
 
     auth = Auth(app)
 
