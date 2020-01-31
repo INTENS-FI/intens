@@ -3,7 +3,8 @@
 # Simulink - they are saved in the model file - as described in
 # https://github.com/Kvixen/Simulix and README.md.
 
-# Simulink model files without extension (.slx).
+# Simulink model file without extension (.slx).
+# Can have a path though.
 MODEL = model
 
 # Matlab executable and flags

@@ -26,8 +26,8 @@ Comment: This is a Multimarkdown document.
   The token changes periodically: repeat as necessary.
 - Install Helm.  It is [a bit
   complicated](https://blog.openshift.com/getting-started-helm-openshift/)
-  for Helm 2 on OpenShift.  Helm 3, currently in alpha, is simpler
-  because it does not require anything on the cluster (no tiller).
+  for Helm 2 on OpenShift.  Helm 3 is simpler because it does not
+  require anything on the cluster (no Tiller).
 - For interactive bliss, add this to `.zshrc` or `.bashrc` (replacing
   `zsh` with `bash`, obviously):
     ```
