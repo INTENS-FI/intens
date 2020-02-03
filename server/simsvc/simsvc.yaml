@@ -1,6 +1,20 @@
-# Default values for Dask config.
+# Simulation service dask.config.
 
 simsvc:
+  server:
+    # Listening address of the HTTP server.
+    # See simsvc.util.addrstr for the format.
+    address: "localhost:8080"
+    # Root URL path of the app.
+    root: "/"
+    # The parent of job work directories or null to disable.
+    # If enabled, must be shared by server and workers.
+    work_dir: null
+    # The job database URL; parsed by zodburi.
+    # null uses file storage simsvc.fs in the current directory.
+    job_db: null
+    # An optional htpasswd file to enable authentication
+    htpasswd_file: null
   cluster:
     type: null
     # Keyword args passed to cluster constructor.
