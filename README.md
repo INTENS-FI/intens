@@ -7,8 +7,9 @@ Comment: This is a Multimarkdown document.
 This repository hosts software developed for Task 2.3 (cloud-based
 optimization framework) of the INTENS project.  Notable files:
 
-- **[rest-api.md](rest-api.html)** documents the simulation service web API
-- **[model-api.md](model-api.html)** documents the interface for the
+- **[doc/rest-api.md](doc/rest-api.html)** documents the simulation
+  service web API
+- **[doc/model-api.md](doc/model-api.html)** documents the interface for the
   simulation service to access the simulation model.
 - **server** contains the simulation service implemented in Python.
 - **o4j_client** contains an optimization client implemented in Java.
