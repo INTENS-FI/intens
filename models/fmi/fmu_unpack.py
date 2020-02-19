@@ -2,7 +2,7 @@
 """
 
 import os, tempfile, atexit, logging
-import dask.config, fmpy
+import fmpy
 
 tmp = fmu = None
 
@@ -24,16 +24,14 @@ def expand_path(f):
     return os.path.join(os.path.dirname(__file__),
                         os.path.expanduser(f))
 
-def unpack_model():
-    """Unpack the model into a temporary directory.
-
-    The model file is given by the environment variable MODEL_FMU or
-    Dask config item simsvc.model.fmu.  Default is "model.fmu".  The
-    file name is processed with expand_path.
+def unpack_model(f):
+    """Unpack the model from file expand_path(f).
 
     This sets module variables tmp and fmu to point at a newly created
     tempfile.TemporaryDirectory and the extracted fmu, respectively.
     It also registers an atexit hook to remove tmp.
+
+    Does nothing if tmp and fmu are already set to non-None values.
     """
     global tmp, fmu
     if tmp is None:
@@ -41,9 +39,5 @@ def unpack_model():
         tmp = tempfile.TemporaryDirectory()
         fmu = None
     if fmu is None:
-        f = os.getenv("MODEL_FMU") or dask.config.get("simsvc.model.fmu",
-                                                      "model.fmu")
-        fmu = fmpy.extract(os.path.join(os.path.dirname(__file__),
-                                        os.path.expanduser(f)),
-                           tmp.name)
+        fmu = fmpy.extract(expand_path(f), tmp.name)
         logger.info("Extracted FMU to %s", fmu)
