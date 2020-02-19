@@ -16,6 +16,9 @@ simsvc:
     # An optional htpasswd file to enable authentication
     htpasswd_file: null
   cluster:
+    # Cluster type to construct.  Supported values: null, local,
+    # kubernetes, slurm.  Null just constructs a client, which may or
+    # may not construct a cluster depending on its configuration.
     type: null
     # Keyword args passed to cluster constructor.
     args: {}

@@ -7,8 +7,7 @@ Author: Timo Korvola
 
 - Matlab, Simulink and Simulink Coder
 - [Simulix][] and its requirements (Python 3, lxml, CMake and a C
-  Compiler).  You'll need to patch [this
-  bug](https://github.com/Kvixen/Simulix/issues/27).
+  Compiler).
 - It is simplest if the whole kit is on your target platform.  It is
   probably possible to run Simulink Coder on a different platform and
   transfer the zip file to the target platform for compilation with
@@ -59,3 +58,25 @@ somewhat buggy.  It is simple to install though, as its dependencies
 are few and readily available.
 
 [FMPy]: https://github.com/CATIA-Systems/FMPy
+
+## FMI Toolbox from Modelon
+
+The commercially licensed FMI Toolbox from Modelon can be used as an
+alternative to Simulix.  You will also need its Coder add-on.  I had
+version 2.7 of the toolbox.  There are some differences from Simulix.
+
+- There are Coder targets for different types of FMUs.  I have mostly
+  used fmu_cs2.tlc, which is co-simulation, FMI version 2.
+- "Generate code only" should be unset, having Coder invoke the
+  compiler.  The generated build system is hairy; you don't want to
+  touch it yourself.  Thus Matlab must be running on the target
+  platform.
+- I had to patch Modelon's makefile template because it passed
+  `rt_nonfinite.o` to the linker twice.  I removed it from
+  `OTHER_SRC`.
+- The correct storage class for parameters appears to be "Model
+  default".  If you use `ExportedGlobal` as with Simulix, an error
+  message tells you to change it, but the suggested replacement does
+  not exist.
+- I had to unset FMU Export / Structured names for parameters.  When
+  set it caused an internal error in the TLC definition.
