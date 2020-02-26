@@ -80,3 +80,43 @@ version 2.7 of the toolbox.  There are some differences from Simulix.
   not exist.
 - I had to unset FMU Export / Structured names for parameters.  When
   set it caused an internal error in the TLC definition.
+
+## Run-time error handling
+
+- Matlab Coder essentially ignores `assert` and `error`, generating no
+  code for them.
+- However, code is generated for Simulink model verification blocks
+  such as assertions: they produce calls to `utAssert(cond)`, a C
+  preprocessor macro.  By default it expands to nothing but that can
+  be changed.
+- FMI Toolbox redefines `utAssert` to interrupt simulation.  The
+  implementation is hidden in object files provided by the toolbox.
+- I have modified Simulix to `longjmp` out of generated code on
+  `utAssert`.  I don't see any generated calls to `malloc`, so
+  hopefully it is safe.
+- Unfortunately the FMU SDK used by Simulix does not support providing
+  any diagnostic information such as an error message.  There is a
+  flag that can be set to terminate simulation, nothing more.  FMI
+  Toolbox is likely to provide better diagnostics.
+- It should also be possible to raise errors from "S-functions"
+  written in C with `ssSetErrorStatus`.  It takes an error message as
+  argument.  S-functions are basically like FMUs but only for
+  Simulink.
+- "Simulink functions" can be called from Matlab function
+  blocks.  Simulink functions can be defined in various ways,
+  including Simulink diagrams and S-functions.
+- We can create a Simulink function, say `assert1(cond)` and define
+  with a diagram containing just an assertion block.  It can then be
+  called from Matlab.  Unfortunately it won't provide any indication
+  where it was called from.
+-   It would now seem natural to define a Simulink function as a
+    S-function in C like:
+
+        if (!cond)
+            ssSetErrorStatus(S, msg);
+
+    Two-argument calls to `assert` could then be replaced by calls to
+    the Simulink function.  Unfortunately it appears that Simulink
+    functions cannot take string arguments such as msg.
+- It is also unclear what happens to `ssSetErrorStatus` in FMU
+  export.  Only `utAssert` has been tested.
