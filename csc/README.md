@@ -99,5 +99,5 @@ Comment: This is a Multimarkdown document.
 [rewrite1]: https://github.com/openshift/origin/issues/19501
 [rewrite2]: https://github.com/openshift/origin/issues/20474
 [auth]: https://github.com/openshift/origin/issues/20324
-[sec-routes]: https://rahti.csc.fi/usage/security-guide/#securing-routes
-[whitelist]: https://rahti.csc.fi/tutorials/elemental_tutorial/#route
+[sec-routes]: https://docs.csc.fi/cloud/rahti/usage/security-guide/#securing-routes
+[whitelist]: https://docs.csc.fi/cloud/rahti/tutorials/elemental_tutorial/#route
