@@ -37,9 +37,9 @@ Scopes seem to get harmlessly ignored, probably other widgets as well.
 
 For each parameter that should be visible in the FMU, open the model
 explorer and create a new parameter in the model workspace (not base
-workspace).  Set its storage class to `ExportedGlobal`.  It should
-show up in the interface report when you build and end up in the FMU
-with the name of the variable.
+workspace).  Set its storage class to Model default or
+`ExportedGlobal`.  It should show up in the interface report when you
+build and end up in the FMU with the name of the variable.
 
 ## Building & simulation
 
@@ -118,5 +118,15 @@ version 2.7 of the toolbox.  There are some differences from Simulix.
     Two-argument calls to `assert` could then be replaced by calls to
     the Simulink function.  Unfortunately it appears that Simulink
     functions cannot take string arguments such as msg.
-- It is also unclear what happens to `ssSetErrorStatus` in FMU
-  export.  Only `utAssert` has been tested.
+- It is also unclear what happens to `ssSetErrorStatus` in FMU export.
+  Only `utAssert` has been tested.  Inital experiments with
+  `ssSetErrorStatus` are not promising: either it does not stop
+  simulation or it raises `SIGSEGV`.  Neither export tool seems to
+  get this right.
+- Unfortunately it also seems that neither export tool supports
+  Simulink functions.  In FMI Toolbox this is explicit and documented,
+  in Simulix it triggers a bug: the zip file ends up containing a
+  `slprj` directory, which confuses Simulix.  Apparently some of the
+  source files in `slprj` should be compiled and linked into the
+  model, whereas some of them don't compile because of missing
+  headers.  What a mess.
