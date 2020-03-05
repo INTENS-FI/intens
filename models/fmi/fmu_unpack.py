@@ -15,6 +15,14 @@ def cleanup():
         tmp.cleanup()
     tmp = fmu = None
 
+def retain():
+    """Prevent cleanup on exit.
+
+    Just sets tmp to None.
+    """
+    global tmp
+    tmp = None
+
 def expand_path(f):
     """Convert f to an absolute path.
 

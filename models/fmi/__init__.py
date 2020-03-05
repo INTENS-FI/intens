@@ -16,7 +16,7 @@ timeout	Simulation timeout in seconds or None (default).
 	Passed to the FMI library.
 """
 
-import os, logging
+import os, logging, multiprocessing as mp
 import dask, fmpy
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,44 @@ if timeout is not None:
 def worker_callback():
     from model.fmu_unpack import unpack_model
     unpack_model(fmu_file)
+
+def simulate_direct(fmu, t0, t1, pars):
+    return fmpy.simulate_fmu(fmu, start_time=t0, stop_time=t1,
+                             start_values=pars, **simargs)
+
+class FMU_process(mp.Process):
+    """Simulate FMU in a subprocess
+
+    Useful if the FMU is prone to crashing or hanging.
+    """
+    def __init__(s, *args):
+        super().__init__()
+        s.args = args
+        s.pin, s.pout = mp.Pipe(False)
+
+    def run(s):
+        from model.fmu_unpack import retain
+        retain()
+        s.pin.send(simulate_direct(*s.args))
+        s.pin.close()
+
+def simulate(*args):
+    """Simulate FMU.
+
+    If timeout is None, simulate directly.  Otherwise use a subprocess,
+    kill it if timeout elapses and raise TimeoutError.  args are passed
+    to simulate_direct, and its return value is returned.
+    """
+    if timeout is None:
+        return simulate_direct(*args)
+    p = FMU_process(*args)
+    p.start()
+    if not s.pout.poll(timeout):
+        p.terminate()
+        raise TimeoutError("Timeout in FMU simulation")
+    res = s.pout.recv()
+    p.join()
+    return res
 
 @dask.delayed
 def task(spec, cancel):
@@ -55,6 +93,5 @@ def task(spec, cancel):
             unk.append(k)
     if unk:
         warn += "Unknown inputs: {}\n".format(", ".join(unk))
-    recs = fmpy.simulate_fmu(fmu, start_time=t0, stop_time=t1,
-                             start_values=pars, **simargs)
+    recs = simulate(fmu, t0, t1, pars)
     return process_results(recs, {'warnings': warn})
