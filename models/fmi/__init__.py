@@ -23,7 +23,10 @@ logger = logging.getLogger(__name__)
 
 fmu_file = os.getenv("MODEL_FMU") or dask.config.get("simsvc.model.fmu",
                                                      "model.fmu")
+simargs = dask.config.get("simsvc.model.simulate-fmu-args", {})
 timeout = dask.config.get("simsvc.model.timeout", None)
+if timeout is not None:
+    simargs.setdefault('timeout', timeout)
 
 def worker_callback():
     from model.fmu_unpack import unpack_model
@@ -53,5 +56,5 @@ def task(spec, cancel):
     if unk:
         warn += "Unknown inputs: {}\n".format(", ".join(unk))
     recs = fmpy.simulate_fmu(fmu, start_time=t0, stop_time=t1,
-                             start_values=pars, timeout=timeout)
+                             start_values=pars, **simargs)
     return process_results(recs, {'warnings': warn})
