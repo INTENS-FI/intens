@@ -11,7 +11,7 @@ config_file = os.path.join(os.path.dirname(__file__), "simsvc.yaml")
 
 def read_config_file():
     with open(config_file) as f:
-        return yaml.load(f)
+        return yaml.safe_load(f)
 
 dask.config.update_defaults(read_config_file())
 dask.config.ensure_file(source=config_file)
