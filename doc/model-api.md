@@ -4,6 +4,12 @@ Comment: This is a Multimarkdown document.
 
 # Intens simulation model API
 
+## Configuration
+
+Dask configuration for `simsvc` has been loaded by the time that the
+simulation model is imported.  The key `simsvc.model` is reserved for
+use by the model.
+
 ## The main entry point: model.task
 
 The simulation model is provided as a Python function
@@ -57,8 +63,10 @@ to poll `cancel` while waiting for a task that polls it.
 
 Errors are indicated by raising exceptions.  An exception from
 `model.task` causes job posting to fail, thus no job is created on the
-server.  An exception from the delayed computation causes the server
-to mark the job as failed.
+server.  An exception other than `TimeoutError` or `CancelledError`
+from the delayed computation causes the server to mark the job as
+failed.  `TimeoutError` must not be raised by the model.  The
+conditions for raising `CancelledError` are descibed above.
 
 The `model.task` function is executed on the server.  How Dask
 executes the delayed computation that it returns depends on

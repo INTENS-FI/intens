@@ -13,7 +13,6 @@ This module can also be configured using dask.config keys under simsvc.model:
 fmu	FMU to load.  Env. var. MODEL_FMU overrides.  Default is "model.fmu".
 	Processed with .fmu_unpack.expand_path, which see.
 timeout	Simulation timeout in seconds or None (default).
-	Passed to the FMI library.
 """
 
 import os, logging, multiprocessing as mp
@@ -25,8 +24,6 @@ fmu_file = os.getenv("MODEL_FMU") or dask.config.get("simsvc.model.fmu",
                                                      "model.fmu")
 simargs = dask.config.get("simsvc.model.simulate-fmu-args", {})
 timeout = dask.config.get("simsvc.model.timeout", None)
-if timeout is not None:
-    simargs.setdefault('timeout', timeout)
 
 def worker_callback():
     from model.fmu_unpack import unpack_model
@@ -42,9 +39,9 @@ class FMU_process(mp.Process):
     Useful if the FMU is prone to crashing or hanging.
     """
     def __init__(s, *args):
-        super().__init__()
+        super().__init__(daemon=True)
         s.args = args
-        s.pin, s.pout = mp.Pipe(False)
+        s.pout, s.pin = mp.Pipe(False)
 
     def run(s):
         from model.fmu_unpack import retain
@@ -58,15 +55,21 @@ def simulate(*args):
     If timeout is None, simulate directly.  Otherwise use a subprocess,
     kill it if timeout elapses and raise TimeoutError.  args are passed
     to simulate_direct, and its return value is returned.
+
+    If running in a daemon process with a timeout, raise RuntimeError.
     """
     if timeout is None:
         return simulate_direct(*args)
+    if mp.current_process().daemon:
+        raise ValueError(
+            "Cannot enforce timeout.  "
+            "Try setting distributed.worker.daemon to false.")
     p = FMU_process(*args)
     p.start()
-    if not s.pout.poll(timeout):
+    if not p.pout.poll(timeout):
         p.terminate()
-        raise TimeoutError("Timeout in FMU simulation")
-    res = s.pout.recv()
+        raise RuntimeError("Timeout in FMU simulation")
+    res = p.pout.recv()
     p.join()
     return res
 
