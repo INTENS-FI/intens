@@ -19,4 +19,8 @@ spec:
     kind: Service
     name: {{ template "simsvc.fullname" . }}-server
     weight: 100
+# Workaround for an OpenAPI bug.
+# https://github.com/openshift/origin/issues/24060
+status:
+  ingress: []
 {{ end -}}
