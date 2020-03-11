@@ -7,14 +7,14 @@ distributed computation.
 import os
 import yaml, dask.config
 
-config_file = os.path.join(os.path.dirname(__file__), "simsvc.yaml")
+defaults_file = os.path.join(os.path.dirname(__file__), "simsvc.yaml")
 
-def read_config_file():
-    with open(config_file) as f:
+def read_defaults_file():
+    with open(defaults_file) as f:
         return yaml.safe_load(f)
 
-dask.config.update_defaults(read_config_file())
-dask.config.ensure_file(source=config_file)
+dask.config.update_defaults(read_defaults_file())
+dask.config.ensure_file(source=defaults_file)
 
 def _env_conf(env, conf):
     return os.environ.get(env, None) or dask.config.get("simsvc." + conf)
