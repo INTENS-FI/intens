@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import logging, argparse
+from urllib.parse import urlparse
 
 import socketio
 
@@ -32,8 +33,10 @@ if __name__ == '__main__':
             logger.setLevel(logging.DEBUG)
     else:
         eio_log = False
+    path = urlparse(args.url)[2].rstrip("/")
+    path += "/socket.io"
     sioc = socketio.Client(ssl_verify=verify, engineio_logger=eio_log)
     sioc.on('launched', on_launched)
     sioc.on('terminated', on_terminated)
-    sioc.connect(args.url)
+    sioc.connect(args.url, socketio_path=path)
     sioc.wait()
