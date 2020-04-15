@@ -17,6 +17,7 @@ timeout	Simulation timeout in seconds or None (default).
 
 import os, logging, multiprocessing as mp
 import dask, fmpy
+from distributed import get_worker
 
 logger = logging.getLogger(__name__)
 
@@ -52,17 +53,19 @@ class FMU_process(mp.Process):
 def simulate(*args):
     """Simulate FMU.
 
-    If timeout is None, simulate directly.  Otherwise use a subprocess,
-    kill it if timeout elapses and raise TimeoutError.  args are passed
-    to simulate_direct, and its return value is returned.
+    If timeout is None and there is only one thread, simulate directly.
+    Otherwise use a subprocess.  If timeout elapses, kill the subprocess
+    and raise TimeoutError.  args are passed to simulate_direct and
+    its return value is returned.
 
-    If running in a daemon process with a timeout, raise RuntimeError.
+    If running in a daemon process and a subprocess is required, raise
+    RuntimeError.
     """
-    if timeout is None:
+    if timeout is None and get_worker().nthreads == 1:
         return simulate_direct(*args)
     if mp.current_process().daemon:
         raise ValueError(
-            "Cannot enforce timeout.  "
+            "Cannot create subprocess.  "
             "Try setting distributed.worker.daemon to false.")
     p = FMU_process(*args)
     p.start()

@@ -1,5 +1,6 @@
 # Build a Simsvc base image with FMI support.
 # Just add FMU and Dask configuration to /app in a derived image.
+# Optionally also add /app/model/custom.py.
 
 ARG base=simsvc
 FROM $base
