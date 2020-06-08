@@ -12,9 +12,9 @@
 ARG base=daskdev/dask
 FROM $base
 
-RUN conda install --yes flask flask-socketio passlib \
-    && conda install --yes -c conda-forge zodb zodburi eventlet \
-             flask-httpauth dask-kubernetes
+RUN conda config --append channels conda-forge \
+    && conda install --yes flask flask-socketio passlib \
+             zodb zodburi eventlet flask-httpauth dask-kubernetes
 
 WORKDIR /tmp
 ARG simsvc_whl
