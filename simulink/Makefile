@@ -16,6 +16,9 @@ MATFLAGS =
 # the directory of the script for its execution.
 MAT_SETUP =
 
+# Additional dependencies for code generation, e.g., files loaded by MAT_SETUP.
+EXTRA_DEPS =
+
 # Simulix executable and flags.
 SIMULIX = python3 $(HOME)/src/Simulix/Simulix.py
 SXFLAGS =
@@ -40,6 +43,6 @@ clean:
 	$(SIMULIX) $(SXFLAGS) -p $*_fmu $*
 	mv $*_fmu/$(@F) $@
 
-%.zip: %.slx $(MAT_SETUP) build_rtw.m
+%.zip: %.slx $(MAT_SETUP) build_rtw.m $(EXTRA_DEPS)
 	MAT_SETUP="$(MAT_SETUP)" SL_MODEL="$*" \
 		$(MAT) $(MATFLAGS) -batch build_rtw
