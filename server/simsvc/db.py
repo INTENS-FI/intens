@@ -2,7 +2,7 @@
 """
 
 from enum import Enum
-import shutil
+import random, shutil
 
 import flask
 from werkzeug.utils import cached_property
@@ -165,7 +165,7 @@ def gen_jobid(jobs):
         return 1
     mk = jobs.maxKey()
     if mk > 10 * len(jobs):
-        return randrange(1, mk)
+        return random.randrange(1, mk)
     else:
         return mk + 1
 
