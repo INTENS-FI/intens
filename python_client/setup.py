@@ -9,5 +9,5 @@ setup(
     author_email='hannu.rummukainen@vtt.fi',
     keywords=['simulation'],
     python_requires=">= 3.6",
-    install_requires=["requests", "numpy"]
+    install_requires=["requests", "socketio", "numpy"]
 )

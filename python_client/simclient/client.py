@@ -3,7 +3,9 @@
 # Based on the requests library.
 
 import requests, time
-from urllib.parse import urljoin
+from threading import Condition
+import socketio
+from urllib.parse import urljoin, urlparse
 from enum import Enum
 
 if False:
@@ -52,12 +54,33 @@ def is_completed(status):
 def endslash(url):
     return url if (len(url) > 0 and url[-1] == '/') else url + '/'
 
-class SimsvcClient(object):
+class SimsvcClient:
     def __init__(self, service_url, timeout_sec=60):
         super().__init__()
         self.service_url = endslash(service_url)
         self.timeout_sec = timeout_sec
         self.session = requests.Session()
+        self.watched = set()
+        self.job_terminated = Condition()
+        self.sio = socketio.Client()
+        self.sio.on('terminated', self.on_terminated)
+        path = urlparse(self.service_url)[2].rstrip("/") + "/socket.io"
+        self.sio.connect(self.service_url, socketio_path=path)
+
+    def on_terminated(self, arg):
+        """Socket.IO termination event handler.
+
+        If the terminating job is in watched, remove it and notify all on
+        job_terminated, which is held for the whole operation.
+        """
+        job = arg['job']
+        with self.job_terminated:
+            try:
+                self.watched.remove(job)
+            except KeyError:
+                pass
+            else:
+                self.job_terminated.notify_all()
 
     def __enter__(self):
         return self
@@ -67,6 +90,7 @@ class SimsvcClient(object):
 
     def close(self):
         self.session.close()
+        self.sio.disconnect()
 
     def _join_url(self, *parts):
         return urljoin(self.service_url, '/'.join(map(str, parts)))
@@ -166,16 +190,22 @@ class SimsvcClient(object):
         return self._get(self._join_url('jobs', jobid, 'dir', path)).json()
 
     def wait_for_job(self, jobid):
-        timestep = 0.1
-        max_timestep = 10.0
-        status = self.get_job_status(jobid)
-        complete = is_completed(status)
-        while not complete:
-            time.sleep(timestep)
-            timestep = min(2 * timestep, max_timestep)
+        timestep = 30.0
+        max_timestep = 30.0
+        self.watched.add(jobid)
+        while True:
             status = self.get_job_status(jobid)
             complete = is_completed(status)
-        return status
+            if complete:
+                self.watched.discard(jobid)
+                return status
+            with self.job_terminated:
+                #XXX As long as other watched jobs keep getting done, this can
+                # loop forever.
+                while (jobid in self.watched
+                       and self.job_terminated.wait(timestep)):
+                    pass
+            timestep = min(2 * timestep, max_timestep)
 
     def run_job(self, inputs_dict):
         jobid = self.post_job(inputs_dict)
@@ -187,3 +217,32 @@ class SimsvcClient(object):
                 return (False, self.get_job_error(jobid))
         finally:
             self.delete_job(jobid)
+
+if __name__ == '__main__':
+    import argparse, json, sys
+    p = argparse.ArgumentParser(
+        description="Run a job on the simultion service",
+        epilog="If both -f and -d are given, they are merged"
+               " with -d taking precedence")
+    p.add_argument('-f', '--file', default=None,
+                   help="File with job inputs as a JSON object")
+    p.add_argument('-d', '--data', metavar="JSON", default=None,
+                   help="Job inputs as a JSON object")
+    p.add_argument(
+        'url', nargs='?', default="http://localhost:8080/",
+        help="Simsvc base URL, default %(default)s")
+    args = p.parse_args()
+    if args.file:
+        with open(args.file) as f:
+            d = json.load(f)
+    else:
+        d = {}
+    if args.data:
+        d.update(json.loads(args.data))
+    with SimsvcClient(args.url) as cli:
+        st, res = cli.run_job(d)
+    if st:
+        print(json.dumps(res))
+    else:
+        print("Simulation terminated with error:\n", res, file=sys.stderr)
+        sys.exit(1)
