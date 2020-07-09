@@ -6,7 +6,7 @@ Inputs:
 	mean	expected return for each asset (vector)
 	c.w	unnormalized portfolio weights (vector)
 Outputs:
-	c.norm	normalized portfolio weights (vector)
+	c.norm	normalisation factor for portfolio weights (scalar)
 	c.er	expected return of portfolio (scalar)
 	c.var	variance of portfolio (non-negative scalar)
 
@@ -25,7 +25,7 @@ def task(spec, cancel):
         raise CancelledError("Cancelled by request")
     cov = np.array(spec.inputs['cov'])
     mean = np.array(spec.inputs['mean'])
-    w = np.array(spec.inputs['c.w'])
+    w = np.array(spec.inputs['c.w'], dtype=float)
     z = max(0.5, sum(w))
     w /= z
     return {'c.norm': z, 'c.er': mean @ w, 'c.var': w @ cov @ w}
