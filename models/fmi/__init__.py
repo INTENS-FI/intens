@@ -12,7 +12,9 @@ process_results(recs, out)	Read simulation results from the structured
 This module can also be configured using dask.config keys under simsvc.model:
 fmu	FMU to load.  Env. var. MODEL_FMU overrides.  Default is "model.fmu".
 	Processed with .fmu_unpack.expand_path, which see.
-timeout	Simulation timeout in seconds or None (default).
+simulate-fmu-args Extra keyword arguments (dict) passed to fmpy.simulate_fmu.
+timeout	Simulation timeout in seconds or None (default).  Can be overridden
+	by input parameter simsvc.timeout.
 """
 
 import os, logging, multiprocessing as mp
@@ -24,7 +26,7 @@ logger = logging.getLogger(__name__)
 fmu_file = os.getenv("MODEL_FMU") or dask.config.get("simsvc.model.fmu",
                                                      "model.fmu")
 simargs = dask.config.get("simsvc.model.simulate-fmu-args", {})
-timeout = dask.config.get("simsvc.model.timeout", None)
+default_timeout = dask.config.get("simsvc.model.timeout", None)
 
 def worker_callback():
     from model.fmu_unpack import unpack_model
@@ -50,7 +52,7 @@ class FMU_process(mp.Process):
         s.pin.send(simulate_direct(*s.args))
         s.pin.close()
 
-def simulate(*args):
+def simulate(*args, timeout=None):
     """Simulate FMU.
 
     If timeout is None and there is only one thread, simulate directly.
@@ -88,16 +90,19 @@ def task(spec, cancel):
     pars = {}
     unk = []
     warn = ""
+    timeout = default_timeout
     for k, v in spec.inputs.items():
         if k == "CITYOPT.simulation_start":
             t0 = v
         elif k == "CITYOPT.simulation_end":
             t1 = v
+        elif k == "simsvc.timeout":
+            timeout = v
         elif k.startswith("p."):
             pars[k[2:]] = v
         else:
             unk.append(k)
     if unk:
         warn += "Unknown inputs: {}\n".format(", ".join(unk))
-    recs = simulate(fmu, t0, t1, pars)
+    recs = simulate(fmu, t0, t1, pars, timeout=timeout)
     return process_results(recs, {'warnings': warn})
