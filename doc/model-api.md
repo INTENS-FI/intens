@@ -35,18 +35,24 @@ function must return a Dask delayed computation, which returns the
 simulation results as a mapping.  Here "mapping" is either a dict or
 something with a similar interface.
 
-The computation should regularly poll the `cancel` variable: if it
-becomes true the computation should cancel itself by raising
-`concurrent.futures.CancelledError`.  The directory `workdir`, unless
-`None`, is shared between the computation and the server: the
-computation may create arbitrary files and subdirectories there, which
-can be immediately downloaded from the server (even while the task is
-running).  `workdir` is retained until the job is deleted.  Tasks may
-only create files in `workdir` or temporary files managed with
-`tempfile` or equivalent in the usual location for the operating
-system (`dir=None` for `tempfile`).  The latter may be faster but the
-files are then inaccessible outside the task.  If `workdir` is `None`
-only temporary files may be created.
+The `cancel` variable was intended as a mechanism for cancelling
+tasks: computations would regularly poll it, and if it should become
+true the computation would cancel itself by raising
+`concurrent.futures.CancelledError`.  However, this idea had to be
+abandoned because of performance problems.  Currently the `cancel`
+parameter is in fact not a `dask.distributed.Variable`; it just mimics
+the interface without actually being shared.  The server has no means
+for interrupting computations.
+
+The directory `workdir`, unless `None`, is shared between the
+computation and the server: the computation may create arbitrary files
+and subdirectories there, which can be immediately downloaded from the
+server (even while the task is running).  `workdir` is retained until
+the job is deleted.  Tasks may only create files in `workdir` or
+temporary files managed with `tempfile` or equivalent in the usual
+location for the operating system (`dir=None` for `tempfile`).  The
+latter may be faster but the files are then inaccessible outside the
+task.  If `workdir` is `None` only temporary files may be created.
 
 We may standardise some of the contents of `workdir` later, e.g.,
 define names of log files.  Some such content may also be specified as
