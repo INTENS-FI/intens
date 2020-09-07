@@ -227,6 +227,9 @@ class TaskFlask(db.DBFlask):
                 return s.refresh_jobs(conn)
         jobs = db.get_state(conn).jobs
         for jid, (fut, canc) in list(s.tasks.items()):
+            # task_done will clean this up or is doing it now.
+            if fut.done():
+                continue
             job = jobs.get(jid)
             if job is None:
                 s.logger.error("Cancelling unknown task %s.", jid)
@@ -242,13 +245,12 @@ class TaskFlask(db.DBFlask):
 
     def task_done(s, jid, fut):
         """Callback when a job is done.
-        jid is a job id, fut is its future.
-        Remove the job from tasks and schedule a database update for saving
-        results.
+
+        jid is a job id, fut its future.  Schedule a database
+        update for saving results and remove the job from tasks.
         """
         assert s.tasks[jid][0] == fut
         assert fut.done()
-        del s.tasks[jid]
         def save_job(conn, res):
             job = db.get_state(conn).jobs.get(jid)
             if job is None:
@@ -277,6 +279,7 @@ class TaskFlask(db.DBFlask):
                 job.status = db.Job_status.DONE
         s.gathers[jid] = fut
         s.updates.put(save_job)
+        del s.tasks[jid]
         s.logger.debug("Task %s done", jid)
 
     def launch(s, jid, job):
@@ -302,9 +305,10 @@ class TaskFlask(db.DBFlask):
     def cancel(s, jid, delete=False):
         """Attempt to cancel a task.
 
-        jid is a job id.  If a corresponding task exists, cancel it and
-        return true.  Otherwise return false.  Optionally arrange for
-        the job to be deleted from the database after the task terminates.
+        jid is a job id.  If a corresponding task exists and is not done,
+        cancel it and return true.  Otherwise return false.  Optionally
+        arrange for the job to be deleted from the database after the
+        task terminates (or immediately if it had already terminated).
         """
         ent = s.tasks.get(jid)
         if ent is None:
@@ -320,6 +324,8 @@ class TaskFlask(db.DBFlask):
                 if fut.cancelled():
                     s.updates.put(del_job)
             fut.add_done_callback(del_on_cancel)
+        if fut.done():
+            return False
         canc.set(True)
         fut.cancel()
         return True
