@@ -216,7 +216,7 @@ class SimsvcClient:
                     pass
             timestep = min(2 * timestep, max_timestep)
 
-    def run_job(self, inputs_dict):
+    def run_job(self, inputs_dict, delete=True):
         jobid = self.post_job(inputs_dict)
         try:
             status = self.wait_for_job(jobid)
@@ -225,7 +225,8 @@ class SimsvcClient:
             else:
                 return (False, self.get_job_error(jobid))
         finally:
-            self.delete_job(jobid)
+            if delete:
+                self.delete_job(jobid)
 
 if __name__ == '__main__':
     import argparse, json, sys
