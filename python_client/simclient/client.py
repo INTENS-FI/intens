@@ -2,7 +2,7 @@
 # Simple synchronous client for the simulation service.
 # Based on the requests library.
 
-import requests, time
+import requests
 from threading import Condition
 import socketio
 from urllib.parse import urljoin, urlparse
@@ -55,10 +55,11 @@ def endslash(url):
     return url if (len(url) > 0 and url[-1] == '/') else url + '/'
 
 class SimsvcClient:
-    def __init__(self, service_url, timeout_sec=60):
+    def __init__(self, service_url, timeout_sec=60, wait_status_retries=11):
         super().__init__()
         self.service_url = endslash(service_url)
         self.timeout_sec = timeout_sec
+        self.wait_status_retries = wait_status_retries
         self.session = requests.Session()
         self.watched = set()
         self.job_terminated = Condition()
@@ -162,8 +163,15 @@ class SimsvcClient:
     def delete_all_jobs(self):
         self._delete(self._join_url('jobs/'))
 
-    def get_job_status(self, jobid):
-        return JobStatus[self._get(self._join_url('jobs', jobid)).json()]
+    def get_job_status(self, jobid, retries=0):
+        while True:
+            try:
+                s = self._get(self._join_url('jobs', jobid)).json()
+                return JobStatus[s]
+            except requests.ConnectionError:
+                if retries <= 0:
+                    raise
+                retries -= 1
 
     def delete_job(self, jobid):
         self._delete(self._join_url('jobs', jobid))
@@ -194,7 +202,8 @@ class SimsvcClient:
         max_timestep = 30.0
         self.watched.add(jobid)
         while True:
-            status = self.get_job_status(jobid)
+            status = self.get_job_status(jobid,
+                                         retries=self.wait_status_retries)
             complete = is_completed(status)
             if complete:
                 self.watched.discard(jobid)
@@ -207,7 +216,7 @@ class SimsvcClient:
                     pass
             timestep = min(2 * timestep, max_timestep)
 
-    def run_job(self, inputs_dict):
+    def run_job(self, inputs_dict, delete=True):
         jobid = self.post_job(inputs_dict)
         try:
             status = self.wait_for_job(jobid)
@@ -216,7 +225,8 @@ class SimsvcClient:
             else:
                 return (False, self.get_job_error(jobid))
         finally:
-            self.delete_job(jobid)
+            if delete:
+                self.delete_job(jobid)
 
 if __name__ == '__main__':
     import argparse, json, sys
