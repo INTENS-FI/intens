@@ -88,3 +88,18 @@ of course manipulate the state of that subprocess.
 
 If `model.worker_callback` is defined, it is registered as a worker
 callback.  See `distributed.Client.register_worker_callbacks`.
+
+## Supporting the Opt4J client
+
+The Opt4J client stems from an earlier project and inherits its data
+model.  It has a two-level namespace for inputs and outputs: they have
+a component and a name.  Both are Python identifiers, in particular
+cannot contain a period.  The component `CITYOPT` is reserved; its
+members `simulation_start` and `simulation_end`, if present, define
+the simulation period in seconds.  The simulation service has no such
+hierarchy, just a flat namespace where any string can serve as a name.
+The client uses names of the form `component.name` with simsvc.
+Models must support such names in order to be usable with the client,
+regardless of the model actually exposing a useful component
+structure.  E.g., `models/fmi` treats component `p` as containing
+parameters and stores all outputs in component `o`.

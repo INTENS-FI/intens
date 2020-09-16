@@ -62,14 +62,14 @@ handles SSL and authentication.
 
 The directory `o4j_client` contains an optimisation client for the
 simulation service.  It is based on a platform developed in an earlier
-project (Cityopt), which in turn is based on the [Opt4J][] library.
-To build you need a Java 11 JDK and Maven.  You need to clone the
-[Cityopt code from Github][cityopt-gh], as it is not available on
-Maven central.  Build modules `sim-eval` and `opt-ga` and install to
-your local Maven repository.  Then build `o4j_client` with Maven.
-This creates an executable jar (in `target`) with the full Opt4J and
-all dependencies included.  Running it with `java -jar` starts up the
-Opt4J configuration GUI.
+project ([Cityopt][]), which in turn is based on the [Opt4J][]
+library.  To build you need a Java 11 JDK and Maven.  You need to
+clone the [Cityopt code from Github][cityopt-gh], as it is not
+available on Maven central.  Build modules `sim-eval` and `opt-ga` and
+install to your local Maven repository.  Then build `o4j_client` with
+Maven.  This creates an executable jar (in `target`) with the full
+Opt4J and all dependencies included.  Running it with `java -jar`
+starts up the Opt4J configuration GUI.
 
 To configure Opt4J for simsvc based optimisation select Problem/Simsvc
 in the GUI.  You will need to specify modelFile, which is in YAML and
@@ -91,5 +91,5 @@ number of worker cores).
 
 [Opt4J]: http://opt4j.sourceforge.net/
 [cityopt-gh]: https://github.com/Cityopt/cityopt "Cityopt on Github"
-[Cityopt project]: http://www.cityopt.eu/
+[Cityopt]: http://www.cityopt.eu/
 [cityopt-csv]: https://github.com/Cityopt/cityopt/blob/master/misc/csv-formats.md
