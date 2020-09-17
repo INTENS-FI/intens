@@ -64,10 +64,15 @@ public class BasicAuthenticator implements Authenticator, Interceptor {
     public Response intercept(Chain chain) throws IOException {
         var req = chain.request();
         var conn = chain.connection();
-        if (conn != null && conn.socket() instanceof SSLSocket) {
-            var areq = addAuth(req);
-            if (areq != null)
-                req = areq;
+        if (conn != null) {
+            var sock = conn.socket();
+            var addr = sock.getInetAddress();
+            if (sock instanceof SSLSocket
+                || (addr != null && addr.isLoopbackAddress())) {
+                var areq = addAuth(req);
+                if (areq != null)
+                    req = areq;
+            }
         }
         return chain.proceed(req);
     }
