@@ -42,6 +42,7 @@ import eu.cityopt.sim.eval.Type;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -537,6 +538,8 @@ public class IntensRunner implements SimulationRunner {
         }
         if (model.auth != null) {
             bld = bld.authenticator(model.auth);
+            if (model.auth instanceof Interceptor)
+                bld = bld.addNetworkInterceptor((Interceptor)model.auth);
         }
         http = bld.build();
         var opts = new IO.Options();
