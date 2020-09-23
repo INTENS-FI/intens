@@ -2,6 +2,7 @@
   <module class="fi.vtt.intens.o4j_client.opt.SimsvcModule">
     <property name="modelFile">models/localhost-model.yaml</property>
     <property name="problemFile">models/mpt-problem.csv</property>
+    <property name="realOnly">true</property>
     <property name="simulator"/>
     <property name="timeOrigin">2010-01-01T00:00:00Z</property>
     <property name="timeSeriesFile"/>

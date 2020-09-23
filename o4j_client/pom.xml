@@ -4,7 +4,7 @@
 
   <groupId>fi.vtt.intens</groupId>
   <artifactId>o4j_client</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>o4j_client</name>
@@ -68,12 +68,12 @@
     <dependency>
       <groupId>eu.cityopt</groupId>
       <artifactId>sim-eval</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>[0.2-SNAPSHOT,)</version>
     </dependency>
     <dependency>
       <groupId>eu.cityopt</groupId>
       <artifactId>opt-ga</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>[0.2-SNAPSHOT,)</version>
     </dependency>
     <dependency>
       <groupId>org.opt4j</groupId>
