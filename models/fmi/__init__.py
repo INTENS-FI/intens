@@ -18,6 +18,7 @@ timeout	Simulation timeout in seconds or None (default).  Can be overridden
 """
 
 import os, logging, multiprocessing as mp
+import multiprocessing.connection as mp_conn
 import dask, fmpy
 from distributed import get_worker
 
@@ -49,19 +50,24 @@ class FMU_process(mp.Process):
     def run(s):
         from model.fmu_unpack import retain
         retain()
-        s.pin.send(simulate_direct(*s.args))
-        s.pin.close()
+        try:
+            s.pin.send(simulate_direct(*s.args))
+        except Exception as e:
+            s.pin.send(e)
+            raise
+        finally:
+            s.pin.close()
 
 def simulate(*args, timeout=None):
     """Simulate FMU.
 
     If timeout is None and there is only one thread, simulate directly.
     Otherwise use a subprocess.  If timeout elapses, kill the subprocess
-    and raise TimeoutError.  args are passed to simulate_direct and
+    and raise RuntimeError.  args are passed to simulate_direct and
     its return value is returned.
 
     If running in a daemon process and a subprocess is required, raise
-    RuntimeError.
+    ValueError.
     """
     if timeout is None and get_worker().nthreads == 1:
         return simulate_direct(*args)
@@ -71,11 +77,17 @@ def simulate(*args, timeout=None):
             "Try setting distributed.worker.daemon to false.")
     p = FMU_process(*args)
     p.start()
-    if not p.pout.poll(timeout):
+    ready = mp_conn.wait([p.pout, p.sentinel], timeout)
+    if not ready:
         p.terminate()
         raise RuntimeError("Timeout in FMU simulation")
+    if p.pout not in ready:
+        p.join()
+        raise RuntimeError("FMU subprocess terminated without output")
     res = p.pout.recv()
     p.join()
+    if p.exitcode != 0 and isinstance(res, Exception):
+        raise RuntimeError("Exception in FMU simulation", res)
     return res
 
 @dask.delayed
