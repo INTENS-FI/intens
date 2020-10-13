@@ -45,8 +45,10 @@ public class IntensManager implements SimulatorManager {
         this.protocolOM = protocolOM;
     }
 
+    @Override
     public void close() throws IOException {}
 
+    @Override
     public IntensModel parseModel(String simulatorName, InputStream modelData)
             throws IOException, ConfigurationException {
         try {
@@ -64,6 +66,7 @@ public class IntensManager implements SimulatorManager {
         }
     }
 
+    @Override
     public IntensRunner makeRunner(SimulationModel model, Namespace namespace)
             throws IOException, ConfigurationException {
         return new IntensRunner((IntensModel)model);
