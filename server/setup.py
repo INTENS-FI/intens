@@ -1,7 +1,7 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 setup(
     name="Simsvc",
-    version="0.5.2",
+    version="0.5.3",
     author="Timo Korvola",
     author_email="Timo.Korvola@vtt.fi",
     description="A distributed simulation service",
