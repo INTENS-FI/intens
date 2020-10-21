@@ -1,7 +1,3 @@
-Title: Intens simulation REST API
-Author: Timo Korvola
-Comment: This is a Multimarkdown document.
-
 # Intens simulation REST API
 
 ## HTTP requests

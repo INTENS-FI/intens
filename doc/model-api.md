@@ -1,7 +1,3 @@
-Title: Intens simulation model API
-Author: Timo Korvola
-Comment: This is a Multimarkdown document.
-
 # Intens simulation model API
 
 ## Configuration
