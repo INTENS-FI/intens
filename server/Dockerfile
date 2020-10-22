@@ -14,7 +14,7 @@ FROM $base
 
 RUN conda config --append channels conda-forge \
     && conda install --yes flask flask-socketio passlib \
-             zodb zodburi eventlet flask-httpauth dask-kubernetes
+             eventlet flask-httpauth dask-kubernetes
 
 WORKDIR /tmp
 ARG simsvc_whl
