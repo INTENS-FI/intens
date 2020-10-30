@@ -11,6 +11,8 @@ optimization framework) of the INTENS project.  Notable files:
 - **o4j_client** contains an optimization client implemented in Java.
   It is based on the [Opt4J][] framework and [code][cityopt-gh]
   developed in the [Cityopt][] project.
+- **python_client** contains a Python library for using the simulation
+  service.
 - **models** contains example models for the simulation service.
 
 ## The simulation service (simsvc)
@@ -19,29 +21,30 @@ The `server` directory contains a web microserver for parallel
 execution of simulations.  It needs a model to run.  For testing you
 can symlink (or copy if on Windows) one of the examples to
 `server/model.py` or `server/model` depending if it is a module or a
-package).  Other arrangements are possible: the server just imports
+package.  Other arrangements are possible: the server just imports
 `task` from `model`.
 
 See `setup.py` for library requirements.  These are for the server;
 the test script `sio-test.py` also requires `socketIO-client`.
 
-Once a model has been provided, `python3 -m simsvc` starts the service,
-running it on the Eventlet WSGI server.  Other WSGI servers can be used
-if they are supported by Flask-SocketIO.  The factory function for
-creating the WSGI app is `create_app` in `simsvc`.  See
-`simsvc.config` for options that can be set with environment
-variables.
+Once a model has been provided, `python3 -m simsvc` starts the
+service, running it on the Eventlet WSGI server.  Other WSGI servers
+can be used if they are supported by Flask-SocketIO.  The factory
+function for creating the WSGI app is `create_app` in `simsvc`.  See
+`server/simsvc/simsvc.yaml` for options that can be set with
+Dask configuration.  Some of these can be set with particular
+environment variables (in addition to the usual Dask config), see
+`simsvc.config` for those.
 
 A Docker image for the service can be built by running `make` in the
-`server` directory.  See the `Makefile` for parameters.  Note that the
-wheel file name may need to be updated if `setup.py` is modified.  The
-image does not contain a model but is intended as a base: a runnable
-image can be built by adding a model, perhaps by using
-`models/Dockerfile`.  In cluster deployments the same image is
-intended to be used for the server, the Dask scheduler and workers.
-The default command runs the server, which in the absence of specific
-Dask configuration starts workers according to the number of cores
-available, thus providing the whole service in a single container.
+`server` directory.  See the `Makefile` for parameters.  The image
+does not contain a model but is intended as a base: a runnable image
+can be built by adding a model, perhaps by using `models/Dockerfile`.
+In cluster deployments the same image is intended to be used for the
+server, the Dask scheduler and workers.  The default command runs the
+server, which in the absence of specific Dask configuration starts
+workers according to the number of cores available, thus providing the
+whole service in a single container.
 
 By default the server listens at `http://localhost:8080/` if executed
 outside Docker.  The Docker image listens at port 8080 on all
