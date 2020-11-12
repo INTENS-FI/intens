@@ -24,9 +24,9 @@ Comment: This is a Multimarkdown document.
   with the access token.  It logs you in with `oc` and `docker`,
   essentially equivalent to the login commands shown on the page.
   The token changes periodically: repeat as necessary.
-- Install Helm.  It is [a bit
+- Install Helm.  It [was
   complicated](https://blog.openshift.com/getting-started-helm-openshift/)
-  for Helm 2 on OpenShift.  Helm 3 is simpler because it does not
+  with Helm 2 but is much simpler with Helm 3 because it does not
   require anything on the cluster (no Tiller).
 - For interactive bliss, add this to `.zshrc` or `.bashrc` (replacing
   `zsh` with `bash`, obviously):
@@ -86,13 +86,14 @@ Comment: This is a Multimarkdown document.
 - Dynamic provisioning of persistent volumes seems to work without any
   particular configuration.  Just use the default storage class. 
 - You should now be able to deploy Simsvc instances with `helm install
-  -n name charts/simsvc`.  Leave out `-n` if using Helm 3.  See
-  `charts/simsvc/values.xml` for parameters.  The release name is also
-  the leading path component of service URLs.  Remember to use image
-  stream names for pulling from the integrated registry.
-- With Helm 2, use `helm delete --purge` to take down instances if you
-  want to reuse the release names.  Helm 3 does not have or need the
-  `--purge` option.
+  name charts/simsvc`.  See `charts/simsvc/values.yaml` for
+  parameters.  The release name is also the leading path component of
+  service URLs.  Remember to use image stream names for pulling from
+  the integrated registry.
+- `oc get -w deploy` is useful for monitoring startup.  You can start
+  using the service when the server, scheduler and at least one worker
+  are up; no need to wait for all workers to start.
+- Use `helm delete` to take down instances.
 
 [registry console]: https://registry-console.rahti.csc.fi/registry
 [img-guide]: https://docs.openshift.com/container-platform/3.11/creating_images/guidelines.html

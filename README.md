@@ -1,21 +1,30 @@
 # INTENS optimization framework repository
 
-This repository hosts software developed for Task 2.3 (cloud-based
-optimization framework) of the INTENS project.  Notable files:
+This repository hosts a framework for distributed simulation-based
+optimization.  It was developed for Task 2.3 (cloud-based optimization
+framework) of the INTENS project.  Notable files:
 
 - **[doc/rest-api.md](doc/rest-api.md)** documents the simulation
   service web API
 - **[doc/model-api.md](doc/model-api.md)** documents the interface for the
   simulation service to access the simulation model.
-- **server** contains the simulation service implemented in Python.
+- **server** contains the simulation service (Simsvc) implemented in Python.
 - **o4j_client** contains an optimization client implemented in Java.
   It is based on the [Opt4J][] framework and [code][cityopt-gh]
   developed in the [Cityopt][] project.
 - **python_client** contains a Python library for using the simulation
   service.
 - **models** contains example models for the simulation service.
+- **[aks][]** contains documentation & other files for running Simsvc on
+  Azure Kubernetes Service.
+- **[csc][]** contains documentation & other files for running
+  Simsvc at [Rahti](https://rahti.csc.fi), an OpenShift cluster operated by
+  [CSC](https://www.csc.fi/).
 
-## The simulation service (simsvc)
+[aks]: aks/README.md
+[csc]: csc/README.md
+
+## The simulation service (Simsvc)
 
 The `server` directory contains a web microserver for parallel
 execution of simulations.  It needs a model to run.  For testing you
@@ -24,8 +33,7 @@ can symlink (or copy if on Windows) one of the examples to
 package.  Other arrangements are possible: the server just imports
 `task` from `model`.
 
-See `setup.py` for library requirements.  These are for the server;
-the test script `sio-test.py` also requires `socketIO-client`.
+See `setup.py` for library requirements.
 
 Once a model has been provided, `python3 -m simsvc` starts the
 service, running it on the Eventlet WSGI server.  Other WSGI servers
@@ -55,7 +63,15 @@ multi-user machines but vulnerable to eavesdropping over actual
 networks.  Unix domain sockets are also somewhat supported: the
 runnable `simsvc` package supports them but, e.g., Java doesn't.
 Production deployments should be secured behind an ingress server that
-handles SSL and authentication.
+handles SSL and preferably also authentication.
+
+A Helm chart `charts/simsvc` is provided for Kubernetes or OpenShift
+deployments.  It was originally developed with Helm 2 and plain
+Kubernetes but has recently been used only with Helm 3 and OpenShift.
+The chart deploys a server, a scheduler and some workers.  It also
+creates persistent volume claims for the job database and work
+directories, although these can be disabled.  Additional per cluster
+setup is needed, e.g., for authentication.
 
 ## The Opt4J client
 
@@ -70,7 +86,7 @@ Maven.  This creates an executable jar (in `target`) with the full
 Opt4J and all dependencies included.  Running it with `java -jar`
 starts up the Opt4J configuration GUI.
 
-To configure Opt4J for simsvc based optimisation select Problem/Simsvc
+To configure Opt4J for Simsvc based optimisation select Problem/Simsvc
 in the GUI.  You will need to specify modelFile, which is in YAML and
 minimally needs to provide the server URL (under the key `url`).  See
 class `IntensModel` for other fields, which are optional.  The
@@ -79,13 +95,13 @@ optimisation problem is specified with a CSV file (problemFile), see
 not currently supported.  Owing to a Guice bug you need to specify a
 valid timestamp as timeOrigin even if you don't otherwise use
 timestamps (if you do use them as simulation inputs, they are passed
-to simsvc as seconds since timeOrigin).  simulator should be left
+to Simsvc as seconds since timeOrigin).  simulator should be left
 empty.
 
-To solve an optimization problem with Opt4J you also need to configure
+To solve an optimization problem with Opt4J, you also need to configure
 an Optimizer, e.g., EvolutionaryAlgorithm, and some Output modules.
 You should also configure Default/IndividualCompleter to run in
-parallel with as many threads as your simsvc can handle (the total
+parallel with as many threads as your Simsvc can handle (the total
 number of worker cores).
 
 [Opt4J]: http://opt4j.sourceforge.net/
