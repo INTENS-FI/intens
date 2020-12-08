@@ -54,13 +54,18 @@ def is_completed(status):
 def endslash(url):
     return url if (len(url) > 0 and url[-1] == '/') else url + '/'
 
+#XXX This class tries to be thread safe, particularly run_job, but is based
+# on requests.Session, whose thread safety is doubtful.
 class SimsvcClient:
-    def __init__(self, service_url, timeout_sec=60, wait_status_retries=11):
+    def __init__(self, service_url, auth=None,
+                 timeout_sec=60, wait_status_retries=11):
         super().__init__()
         self.service_url = endslash(service_url)
         self.timeout_sec = timeout_sec
         self.wait_status_retries = wait_status_retries
         self.session = requests.Session()
+        if auth is not None:
+            self.session.auth = auth
         self.watched = set()
         self.job_terminated = Condition()
         self.sio = socketio.Client()

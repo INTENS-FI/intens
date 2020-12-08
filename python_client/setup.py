@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='SimsvcClient',
-    version='0.1.1',
+    version='0.2.0',
     description='Python client for distributed simulation service',
     packages=['simclient'],
     author='Hannu Rummukainen',

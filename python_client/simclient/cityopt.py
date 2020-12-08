@@ -94,7 +94,7 @@ def idems(dit):
     """
     return dit.items() if hasattr(dit, 'items') else dit
 
-def gen_eval(loc, exprs, update=False):
+def gen_eval(loc, exprs, update=False, undef=False):
     """Evaluate a dict-like of expressions.
 
     exprs is a dict or an iterable of (name, expr) pairs.  Each expr
@@ -102,10 +102,18 @@ def gen_eval(loc, exprs, update=False):
     loc as locals.  Generates (name, value) pairs.  If update is true,
     the results are added to loc before yielding; it is equivalent to
     loc.update(gen_eval(loc, exprs)) but lets the caller also do
-    something else with the results.
+    something else with the results.  If undef is true, NameError and
+    AttributeError are caught and silently skipped during evaluation
+    (nothing is generated or inserted into loc).
     """
     for n, x in idems(exprs):
-        v = eval(x, glob, loc)
+        if undef:
+            try:
+                v = eval(x, glob, loc)
+            except (NameError, AttributeError):
+                continue
+        else:
+            v = eval(x, glob, loc)
         if update:
             loc[n] = v
         yield n, v
@@ -162,29 +170,29 @@ class OptProb:
         """
         loc.update(dvs)
         yield from s.in_c.items()
-        yield from gen_eval(loc, s.in_v, True)
+        yield from gen_eval(loc, s.in_v, update=True)
 
-    def eval_met(s, loc, out):
+    def eval_met(s, loc, out, **kws):
         """Compute metrics.
 
         loc should be from make_locals, extended with gen_inputs.
         It is updated from out (simulation outputs) and then by
-        evaluating the metrics (met).
+        evaluating the metrics (met).  kws is passed to gen_eval.
         """
         loc.update(out)
-        loc.update(gen_eval(loc, s.met))
+        loc.update(gen_eval(loc, s.met, update=False, **kws))
 
     #TODO Constraint evaluation (pre and post simulation)
 
-    def gen_obj(s, loc):
+    def gen_obj(s, loc, **kws):
         """Compute objectives.
 
         loc should be from make_locals, extended with gen_inputs and
         eval_met.  Evaluates the objectives (from obj), generating
         (name, value) pairs.  The objectives are not inserted in loc.
+        kws is passed to gen_eval.
         """
-        return gen_eval(((n, x) for n, (sn, x) in s.obj),
-                        glob, loc)
+        return gen_eval(loc, ((n, x) for n, (sn, x) in s.obj.items()), **kws)
 
 row_parsers = {}
 def _parses(kind):
