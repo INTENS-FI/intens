@@ -15,6 +15,30 @@ def prior_means(op):
     """
     raise NotImplementedError("Priors not yet implemented")
 
+# Based on dragonfly/bin/dragonfly-script.py
+def _make_df_options_parser():
+    optlist = (
+        dragonfly.opt.ga_optimiser.ga_opt_args
+        + dragonfly.opt.gp_bandit.get_all_euc_gp_bandit_args()
+        + dragonfly.opt.gp_bandit.get_all_cp_gp_bandit_args()
+        + dragonfly.opt.gp_bandit.get_all_mf_euc_gp_bandit_args()
+        + dragonfly.opt.gp_bandit.get_all_mf_cp_gp_bandit_args()
+        + dragonfly.opt.random_optimiser.euclidean_random_optimiser_args
+        + dragonfly.opt.random_optimiser.mf_euclidean_random_optimiser_args
+        + dragonfly.opt.random_optimiser.cp_random_optimiser_args
+        + dragonfly.opt.random_optimiser.mf_cp_random_optimiser_args
+        + dragonfly.opt.multiobjective_gp_bandit.get_all_euc_moo_gp_bandit_args()
+        + dragonfly.opt.multiobjective_gp_bandit.get_all_cp_moo_gp_bandit_args()
+        + dragonfly.opt.random_multiobjective_optimiser.euclidean_random_multiobjective_optimiser_args
+        + dragonfly.opt.random_multiobjective_optimiser.cp_random_multiobjective_optimiser_args)
+    optdict = dict((o['name'] if o['name'].startswith('-') else '--'+o['name'],
+                    dict((k,v) for k,v in o.items() if k != 'name'))
+                   for o in optlist)
+    p = ArgumentParser("Dragonfly options")
+    for n,o in optdict.items():
+        p.add_argument(n, **o)
+    return p
+
 if __name__ == '__main__':
     logging.basicConfig()
     p = ArgumentParser(
@@ -27,6 +51,10 @@ if __name__ == '__main__':
                    help="number of parallel evaluations (default %(default)s)")
     p.add_argument('-t', '--timelimit', metavar='T', type=int, default=600,
                    help="time limit in seconds (default %(default)s)")
+    p.add_argument('-D', '--option', action='append',
+                   metavar='OPTION=VALUE', help="Dragonfly option setting")
+    p.add_argument('-F', '--options-file', action='append',
+                   help="Dragonfly options file")
     p.add_argument('--use-prior', action='store_true',
                    help="use prior mean function")
     a = p.parse_args()
@@ -42,10 +70,17 @@ if __name__ == '__main__':
     op = cityopt.read_op(a.problem)
     cfg = co2df.load_config_dict(
         {'name': "simsvc", 'domain': co2df.df_domain(op)})
+    dfp = _make_df_options_parser()
     opt = Namespace()
-    opt.moors_scalarisation = 'linear'
+    for path in a.options_file or []:
+        with open(path) as f:
+            dfp.parse_args([s for r in f for s in r.strip().split()], opt)
+    for ov in a.option or []:
+        o = ov.split('=', 1)
+        o[0] = '--'+o[0]
+        dfp.parse_args(o, opt)
     if a.use_prior:
-        options.moo_gpb_prior_means = priors(op)
+        opt.moo_gpb_prior_means = prior_means(op)
 
     obj = co2df.objective(op, cfg, url, auth=auth)
     n_objectives = obj[1]
