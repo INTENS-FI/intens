@@ -7,14 +7,6 @@ from requests.auth import HTTPBasicAuth
 from .client import SimsvcClient
 from . import cityopt, co2df
 
-def prior_means(op):
-    """Return a list of functions for computing objective means.
-
-    The list contains None for objectives with no available prior.  op is
-    a cityopt.OptProb.
-    """
-    raise NotImplementedError("Priors not yet implemented")
-
 # Based on dragonfly/bin/dragonfly-script.py
 def _make_df_options_parser():
     optlist = (
@@ -91,7 +83,7 @@ if __name__ == '__main__':
         o[0] = '--'+o[0]
         dfp.parse_args(o, opt)
     if a.use_prior:
-        opt.moo_gpb_prior_means = prior_means(op)
+        opt.moo_gpb_prior_means = co2df.prior_means(op, cfg)
 
     obj = co2df.objective(op, cfg, url, auth=auth)
     n_objectives = obj[1]

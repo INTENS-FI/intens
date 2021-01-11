@@ -8,6 +8,7 @@ import logging, numpy as np, sys
 from dragonfly.parse.config_parser import load_parameters
 from dragonfly import load_config
 from dragonfly.exd.exd_utils import EVAL_ERROR_CODE
+from dragonfly.exd.cp_domain_utils import get_raw_point_from_processed_point
 
 from .cityopt import Type
 from .client import SimsvcClient
@@ -96,6 +97,40 @@ def objective(op, config, url, auth=None, n_retries=0):
             logging.exception("Exception in objective function")
             sys.exit(1)
     return foo, len(op.obj)
+
+def _make_prior_mean_obj(op, config, n):
+    dvs = config.domain_orderings.raw_name_ordering
+    sn,_ = op.obj[n]
+    def fun(processed_point):
+        args = get_raw_point_from_processed_point(
+            processed_point, config.domain,
+            config.domain_orderings.index_ordering,
+            config.domain_orderings.dim_ordering)
+        assert len(dvs) == len(args)
+        loc = op.make_locals()
+        inp = dict(op.gen_in(loc, zip(dvs, (_fix_type(a) for a in args))))
+        #TODO op.eval_met without result
+        return sn * op.eval_obj(n, loc)
+    def wrap(args):
+        try:
+            return np.array([fun(point) for point in args])
+        except:
+            logging.exception(
+                f"Exception in prior objective function {n} with args={args}")
+            sys.exit(1)
+    return wrap
+
+def prior_means(op, config):
+    """Return a list of functions for computing objective means.
+
+    The list contains None for objectives with no available prior.  op is
+    a cityopt.OptProb, config a Dragonfly config.
+    """
+    prior_flags = op.flag_prior_objs()
+    logging.info("Setting up prior means for: " + " ".join(
+        n for f,n in zip(prior_flags, op.obj.keys()) if f))
+    return [_make_prior_mean_obj(op, config, n) if f else None
+            for f,n in zip(prior_flags, op.obj.keys())]
 
 def tabulate_job_data(op, url, auth=None):
     """Read job inputs and outputs from the service and compute metrics.

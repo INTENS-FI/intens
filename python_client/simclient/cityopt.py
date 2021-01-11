@@ -7,7 +7,7 @@ This module requires Python 3 although expressions in Cityopt are
 in Python 2 (Jython).
 """
 
-import json, csv, builtins
+import json, csv, builtins, ast
 from enum import Enum, IntEnum, auto, unique
 from collections import ChainMap, deque
 
@@ -128,13 +128,16 @@ class OptProb:
 		Type is INT or FLOAT.  lb and ub are the bounds.
 	in_c	Constant inputs; value is the value (depends on type).
 	in_v	Variable inputs; value is the expression (usable in eval).
-	out	Ouputs; value is the Type.
+	out	Outputs; value is the Type.
 	met	Metrics; value is the expression.
 	con	Constraints; value is (expression, lb, ub).  The bounds
 		lb and ub are numeric or None.
-	obj	Objecives; value is (Sense, expression).
+	obj	Objectives; value is (Sense, expression).
     In addition, components is the set of component names appearing in
     decision variables, inputs and outputs.
+
+    The expressions listed above are compiled. Their original source code
+    can be found in the dictionary src, indexed by (kind, qname).
     """
     def __init__(s):
         s.ext = {}
@@ -146,6 +149,7 @@ class OptProb:
         s.con = {}
         s.obj = {}
         s.components = set()
+        s.src = {}
 
     def make_locals(s):
         """Create a local variable dictionary.
@@ -193,6 +197,50 @@ class OptProb:
         kws is passed to gen_eval.
         """
         return gen_eval(loc, ((n, x) for n, (sn, x) in s.obj.items()), **kws)
+
+    def eval_obj(s, n, loc):
+        _,x = s.obj[n]
+        return eval(x, glob, loc)
+
+    def _get_qname2kind(s):
+        q2k = dict()
+        q2k.update((n, Kind.EXT) for n in s.ext.keys())
+        q2k.update((n, Kind.DV) for n in s.dv.keys())
+        q2k.update((n, Kind.IN) for n in s.in_c.keys())
+        q2k.update((n, Kind.IN) for n in s.in_v.keys())
+        q2k.update((n, Kind.OUT) for n in s.out.keys())
+        q2k.update((n, Kind.MET) for n in s.met.keys())
+        q2k.update((n, Kind.OBJ) for n in s.obj.keys())
+        return q2k
+
+    def flag_prior_objs(s):
+        """Determine which objectives can be evaluated prior to simulation.
+        Returns list of booleans in the same order as 'obj'.
+        """
+        q2k = s._get_qname2kind()
+        return [can_pre_eval(s.src[Kind.OBJ, n], q2k) for n in s.obj]
+
+class _QNameCollector(ast.NodeVisitor):
+    def __init__(s):
+        s.qnames = set()
+    def visit_Attribute(s, n, suffix=''):
+        if isinstance(n.value, ast.Attribute):
+            s.visit_Attribute(n.value, '.'+n.attr+suffix)
+        elif isinstance(n.value, ast.Name):
+            s.qnames.add(n.value.id+'.'+n.attr+suffix)
+    def visit_Name(s, n):
+        s.qnames.add(n.id)
+
+def _expr_qnames(expr):
+    """Set of qualified names referenced in the given expression."""
+    qnc = _QNameCollector()
+    qnc.visit(ast.parse(expr, mode='eval'))
+    return qnc.qnames
+
+# TODO compute transitive dependencies to enable metrics in prior objectives
+def can_pre_eval(expr, q2k):
+    return all(q2k[n] not in {Kind.OUT, Kind.MET, Kind.OBJ}
+               for n in _expr_qnames(expr))
 
 row_parsers = {}
 def _parses(kind):
@@ -263,4 +311,6 @@ def read_op(fname):
                 (p.in_v if is_v else p.in_c)[qn] = d
             else:
                 getattr(p, kind.name.lower())[qn] = v
+            if row['expression']:
+                p.src[kind, qn] = row['expression']
     return p
