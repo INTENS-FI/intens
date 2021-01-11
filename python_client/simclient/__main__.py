@@ -45,7 +45,13 @@ def _find_row_index(rowtuple, df):
     return -1 if len(ii) == 0 else ii[0]
 
 if __name__ == '__main__':
-    logging.basicConfig()
+    log_stderr = logging.StreamHandler()
+    log_stderr.setLevel(logging.WARNING)
+    log_file = logging.FileHandler("debug.log")
+    logging.basicConfig(
+        level=logging.DEBUG, handlers=[log_stderr, log_file],
+        format='%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s'
+    )
     p = ArgumentParser(
         description="Bayesian optimisation with Dragonfly and Simsvc")
     p.add_argument('simsvc', type=str,
