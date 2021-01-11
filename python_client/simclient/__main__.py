@@ -39,6 +39,11 @@ def _make_df_options_parser():
         p.add_argument(n, **o)
     return p
 
+def _find_row_index(rowtuple, df):
+    rowflags = pandas.DataFrame.all(df == rowtuple, 1)
+    ii = numpy.where(rowflags)[0]
+    return -1 if len(ii) == 0 else ii[0]
+
 if __name__ == '__main__':
     logging.basicConfig()
     p = ArgumentParser(
@@ -133,5 +138,22 @@ if __name__ == '__main__':
     queries['eval_time'] = history.query_eval_times
     queries['send_at'] = history.query_send_times
     queries['receive_at'] = history.query_receive_times
+
+    queries.to_csv('queries.csv', index=False)
+
+    # Evaluate metrics using job data stored in the service.
+    # Dragonfly queries are matched with jobs by input & objective values.
+    met_names = list(op.met.keys())
+    job_data = pandas.DataFrame(co2df.tabulate_job_data(op, url, auth=auth))
+    query_io = pandas.DataFrame(
+        pandas.concat([pandas.Series(co2df.args2inputs(op, row[arg_names])),
+                       row[obj_names]])
+        for _,row in queries.iterrows())
+    job_io = job_data[query_io.columns]
+    ri = numpy.array([_find_row_index(io, job_io)
+                      for io in query_io.itertuples(False)])
+    for n in met_names:
+        queries[n] = job_data[n].iloc[ri].tolist()
+    queries.loc[ri < 0, met_names] = numpy.nan
 
     queries.to_csv('queries.csv', index=False)

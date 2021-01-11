@@ -233,6 +233,18 @@ class SimsvcClient:
             if delete:
                 self.delete_job(jobid)
 
+    def read_all_results(self):
+        """Reads all successful job inputs and results from the service.
+        Returns dict mapping jobid to (inputs, results) pairs."""
+        results = dict()
+        for jobid in self.get_job_ids():
+            status = self.get_job_status(jobid)
+            if status == JobStatus.DONE:
+                inputs = self.get_job_input_values(jobid)
+                result = self.get_job_result_values(jobid)
+                results[jobid] = (inputs, result)
+        return results
+
 if __name__ == '__main__':
     import argparse, json, sys
     p = argparse.ArgumentParser(

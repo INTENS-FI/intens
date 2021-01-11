@@ -40,6 +40,9 @@ def df_domain(op):
     """
     return dict(gen_df_domain(op))
 
+def _fix_type(x):
+    return int(x) if isinstance(x, np.signedinteger) else x
+
 def objective(op, config, url, auth=None, n_retries=0):
     """Return an objective function for Dragonfly.
     
@@ -50,13 +53,10 @@ def objective(op, config, url, auth=None, n_retries=0):
     """
     dvs = config.domain_orderings.raw_name_ordering
     senses = [sn for sn, expr in op.obj.values()]
-    def fix_types(xs):
-        for x in xs:
-            yield int(x) if isinstance(x, np.signedinteger) else x
     def fun(args):
         assert len(dvs) == len(args)
         loc = op.make_locals()
-        inp = dict(op.gen_in(loc, zip(dvs, fix_types(args))))
+        inp = dict(op.gen_in(loc, zip(dvs, (_fix_type(a) for a in args))))
         #XXX It is stupid to create a client per call but hard to do
         # better with Dragonfly, because it uses multiple processes, not
         # threads.  Can't really blame it, considering the sorry state
@@ -96,3 +96,25 @@ def objective(op, config, url, auth=None, n_retries=0):
             logging.exception("Exception in objective function")
             sys.exit(1)
     return foo, len(op.obj)
+
+def tabulate_job_data(op, url, auth=None):
+    """Read job inputs and outputs from the service and compute metrics.
+    Returns dict mapping qualified names to lists of values from the jobs.
+    """
+    with SimsvcClient(url, auth) as client:
+        jobdata = client.read_all_results()
+
+    dvs = op.dv.keys()
+    results = []
+    for jin, jout in jobdata.values():
+        loc = op.make_locals()
+        loc.update(jin)
+        op.eval_met(loc, jout)
+        for _ in op.gen_obj(loc, update=True): pass
+        results.append(dict(loc))
+    return results
+
+def args2inputs(op, args):
+    loc = op.make_locals()
+    return dict(op.gen_in(loc, ((n, _fix_type(args[n]))
+                                for n in op.dv.keys())))
