@@ -141,12 +141,15 @@ def tabulate_job_data(op, url, auth=None):
 
     dvs = op.dv.keys()
     results = []
-    for jin, jout in jobdata.values():
+    for jobid, (jin, jout) in jobdata.items():
         loc = op.make_locals()
-        loc.update(jin)
-        op.eval_met(loc, jout)
-        for _ in op.gen_obj(loc, update=True): pass
-        results.append(dict(loc))
+        try:
+            loc.update(jin)
+            op.eval_met(loc, jout)
+            for _ in op.gen_obj(loc, update=True): pass
+            results.append(dict(loc))
+        except Exception as e:
+            logging.warning(f'Failed to evaluate job {jobid}: {str(e)}')
     return results
 
 def args2inputs(op, args):
