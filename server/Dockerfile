@@ -12,14 +12,10 @@
 ARG base=daskdev/dask
 FROM $base
 
-RUN conda config --append channels conda-forge \
-    && conda install --yes flask flask-socketio passlib \
-             eventlet flask-httpauth dask-kubernetes
-
 WORKDIR /tmp
 ARG simsvc_whl
 COPY dist/$simsvc_whl .
-RUN pip install $simsvc_whl && rm $simsvc_whl
+RUN pip install dask-kubernetes $simsvc_whl && rm $simsvc_whl
 
 WORKDIR /apprun
 ARG user=nobody:nogroup
