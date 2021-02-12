@@ -144,18 +144,25 @@ class SimsvcClient:
     def get_job_ids(self):
         return self._get(self._join_url('jobs/')).json()
 
-    def get_job_statuses(self, jobids=None):
+    def get_job_statuses(self, jobids=None, retries=0):
         url = self._join_url('jobs/')
-        if jobids is None:
-            r = self.session.get(
-                url, params={'status': 'true'}, timeout=self.timeout_sec)
-        else:
-            r = self.session.get(
-                url, params={'status': 'true',
-                             'only': ",".join(map(str, jobids))},
-                timeout=self.timeout_sec)
-        r.raise_for_status()
-        return dict((int(k), JobStatus[v]) for k,v in r.json().items())
+        while True:
+            try:
+                if jobids is None:
+                    r = self.session.get(
+                        url, params={'status': 'true'},
+                        timeout=self.timeout_sec)
+                else:
+                    r = self.session.get(
+                        url, params={'status': 'true',
+                                     'only': ",".join(map(str, jobids))},
+                        timeout=self.timeout_sec)
+                r.raise_for_status()
+                return dict((int(k), JobStatus[v]) for k,v in r.json().items())
+            except requests.ConnectionError:
+                if retries <= 0:
+                    raise
+                retries -= 1
 
     def post_job(self, inputs_dict):
         r = self.session.post(self._join_url('jobs/'),
@@ -202,24 +209,33 @@ class SimsvcClient:
     def get_job_dir(self, jobid, path=''):
         return self._get(self._join_url('jobs', jobid, 'dir', path)).json()
 
-    def wait_for_job(self, jobid):
+    def wait_for_any_job(self, jobids):
         timestep = 30.0
         max_timestep = 30.0
-        self.watched.add(jobid)
+        jobids = frozenset(jobids)
+        self.watched.update(jobids)
+        result = dict()
         while True:
-            status = self.get_job_status(jobid,
-                                         retries=self.wait_status_retries)
-            complete = is_completed(status)
-            if complete:
-                self.watched.discard(jobid)
-                return status
+            statuses = self.get_job_statuses(jobids,
+                                             retries=self.wait_status_retries)
+            for jobid, status in statuses.items():
+                complete = is_completed(status)
+                if complete:
+                    result[jobid] = status
+            if len(result) > 0:
+                self.watched.difference_update(jobids)
+                return result
             with self.job_terminated:
                 #XXX As long as other watched jobs keep getting done, this can
                 # loop forever.
-                while (jobid in self.watched
+                while (self.watched.issuperset(jobids)
                        and self.job_terminated.wait(timestep)):
                     pass
             timestep = min(2 * timestep, max_timestep)
+
+    def wait_for_job(self, jobid):
+        status_dict = self.wait_for_any_job({jobid})
+        return status_dict[jobid]
 
     def run_job(self, inputs_dict, delete=True):
         jobid = self.post_job(inputs_dict)
@@ -248,7 +264,7 @@ class SimsvcClient:
 if __name__ == '__main__':
     import argparse, json, sys
     p = argparse.ArgumentParser(
-        description="Run a job on the simultion service",
+        description="Run a job on the simulation service",
         epilog="If both -f and -d are given, they are merged"
                " with -d taking precedence")
     p.add_argument('-f', '--file', default=None,
