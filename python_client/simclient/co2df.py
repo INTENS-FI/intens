@@ -10,7 +10,7 @@ from dragonfly import load_config
 from dragonfly.exd.exd_utils import EVAL_ERROR_CODE
 from dragonfly.exd.cp_domain_utils import get_raw_point_from_processed_point
 
-from .cityopt import Type
+from .cityopt import Type, Component
 from .client import SimsvcClient
 
 def load_config_dict(d):
@@ -134,12 +134,12 @@ def prior_means(op, config):
 
 def tabulate_job_data(op, url, auth=None):
     """Read job inputs and outputs from the service and compute metrics.
-    Returns dict mapping qualified names to lists of values from the jobs.
+    Returns list of dictionaries, each dictionary mapping qualified names
+    to values in a specific job.  If some jobs do not have sufficient data
+    for the optimisation problem 'op', they are skipped (with a warning).
     """
     with SimsvcClient(url, auth) as client:
         jobdata = client.read_all_results()
-
-    dvs = op.dv.keys()
     results = []
     for jobid, (jin, jout) in jobdata.items():
         loc = op.make_locals()
@@ -147,7 +147,8 @@ def tabulate_job_data(op, url, auth=None):
             loc.update(jin)
             op.eval_met(loc, jout)
             for _ in op.gen_obj(loc, update=True): pass
-            results.append(dict(loc))
+            results.append(dict((k, v) for k, v in loc.items()
+                                if not isinstance(v, Component)))
         except Exception as e:
             logging.warning(f'Failed to evaluate job {jobid}: {str(e)}')
     return results

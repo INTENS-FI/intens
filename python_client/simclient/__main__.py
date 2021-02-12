@@ -142,7 +142,8 @@ if __name__ == '__main__':
     # Evaluate metrics using job data stored in the service.
     # Dragonfly queries are matched with jobs by input & objective values.
     met_names = list(op.met.keys())
-    job_data = pandas.DataFrame(co2df.tabulate_job_data(op, url, auth=auth))
+    job_data = pandas.DataFrame.from_records(
+        co2df.tabulate_job_data(op, url, auth=auth))
     query_io = pandas.DataFrame(
         pandas.concat([pandas.Series(co2df.args2inputs(op, row[arg_names])),
                        row[obj_names]])
