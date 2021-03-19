@@ -1,4 +1,4 @@
-"""Nondominated sorting (as in NSGA).
+"""Non-dominated sorting (as in NSGA).
 """
 
 import numpy as np
@@ -22,9 +22,9 @@ def doms(u, v):
             return 0
     return sg
 
-# Currently miscompiles.
+# Lists are a bit bleeding edge in Numba; miscompilation is possible.
 # Try ndsort(np.arange(6).reshape((3, 2))).
-#@jit
+@njit
 def ndsort(obj):
     """Non-dominated sorting.
 
@@ -35,7 +35,8 @@ def ndsort(obj):
     dominated by some member of the preceding front.
     """
     # ss[i] are the solutions dominated by i.
-    ss = [[] for r in obj]
+    # Empty list kluge helps Numba type inference.
+    ss = [[_ for _ in range(0)] for r in obj]
     # ns[i] is the number of solutions that dominate i.
     ns = np.zeros(len(obj), dtype=np.uint)
     for i in range(len(obj) - 1):
@@ -86,13 +87,18 @@ def _ndfront(obj, front):
             elif d == 1:
                 front[i] = False
 
-def ndfront(obj):
+def ndfront(obj, mask=None):
     """Non-dominated front.
 
     Return a boolean vector indicating the non-dominated objectives.
     ndfront(obj).nonzero()[0] is equivalent to ndsort(obj)[0] but faster
     (and returns an array).
+
+    mask, if given, is a boolean vector of len(obj).  Only rows of obj
+    for which mask is true are compared.  mask is modified in place
+    to remove any dominated rows.
     """
-    front = np.ones(len(obj), dtype=bool)
-    _ndfront(obj, front)
-    return front
+    if mask is None:
+        mask = np.ones(len(obj), dtype=bool)
+    _ndfront(obj, mask)
+    return mask
