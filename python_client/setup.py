@@ -4,7 +4,7 @@ setup(
     name='SimsvcClient',
     version='0.2.0',
     description='Python client for distributed simulation service',
-    packages=['simclient'],
+    packages=['simclient', 'multiobjtools'],
     author='Hannu Rummukainen',
     author_email='hannu.rummukainen@vtt.fi',
     keywords=['simulation'],
