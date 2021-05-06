@@ -84,6 +84,9 @@ if __name__ == '__main__':
         dfp.parse_args(o, opt)
     if a.use_prior:
         opt.moo_gpb_prior_means = co2df.prior_means(op, cfg)
+    for k in opt.__dict__:
+        if opt.__dict__.get(k) == "None":
+            opt.__dict__[k] = None
 
     obj = co2df.objective(op, cfg, url, auth=auth)
     n_objectives = obj[1]
