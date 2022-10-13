@@ -462,6 +462,8 @@ public class IntensRunner implements SimulationRunner {
         }
     }
 
+    // No longer distinguished by the library.
+    @SuppressWarnings("unused")
     private synchronized void on_timeout(Object... args) {
         logger.error("Socket.IO timeout: {}", Arrays.asList(args));
         sio.close();
@@ -559,9 +561,7 @@ public class IntensRunner implements SimulationRunner {
         sio = IO.socket(model.uri.resolve("/"), opts);
         sio.on("terminated", this::on_terminated);
         sio.on(Socket.EVENT_CONNECT, this::on_connect);
-        sio.on(Socket.EVENT_ERROR, this::on_error);
         sio.on(Socket.EVENT_CONNECT_ERROR, this::on_error);
-        sio.on(Socket.EVENT_CONNECT_TIMEOUT, this::on_timeout);
         sio.connect();
     }
 
