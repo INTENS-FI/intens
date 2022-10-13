@@ -9,12 +9,12 @@ simsvc:
     root: "/"
     # The parent of job work directories or null to disable.
     # If enabled, must be shared by server and workers.
-    work_dir: null
+    work-dir: null
     # The job database URL; parsed by zodburi.
     # null uses file storage simsvc.fs in the current directory.
-    job_db: null
+    job-db: null
     # An optional htpasswd file to enable authentication
-    htpasswd_file: null
+    htpasswd-file: null
   cluster:
     # Cluster type to construct.  Supported values: null, local,
     # kubernetes, slurm.  Null just constructs a client, which may or
