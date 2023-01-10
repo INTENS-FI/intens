@@ -7,7 +7,7 @@ FROM $base
 
 WORKDIR /app
 USER root
-RUN conda install --yes -c conda-forge fmpy
+RUN pip install fmpy
 COPY *.py model/
 ENV PYTHONPATH=/app:$PYTHONPATH DASK_CONFIG=/app
 

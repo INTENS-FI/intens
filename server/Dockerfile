@@ -4,7 +4,7 @@
 # Build-arg simsvc_whl is the wheel file name without path.
 # The server runs as build-arg user, default nobody:nogroup,
 # and listens at build-arg port, default 8080.
-# Build arg base is the base image, which must have conda.
+# Build arg base is the base image, which must have pip.
 # Build arg perm is passed to chmod for setting permissions of writable
 # directories, default is u+rwx.
 # Derived images should leave WORKDIR as /apprun and USER as $SIMSVC_USER.
