@@ -65,7 +65,7 @@ runnable `simsvc` package supports them but, e.g., Java doesn't.
 Production deployments should be secured behind an ingress server that
 handles SSL and preferably also authentication.
 
-A Helm chart `charts/simsvc` is provided for Kubernetes or OpenShift
+A Helm chart `helm/simsvc` is provided for Kubernetes or OpenShift
 deployments.  It was originally developed with Helm 2 and plain
 Kubernetes but has recently been used only with Helm 3 and OpenShift.
 The chart deploys a server, a scheduler and some workers.  It also

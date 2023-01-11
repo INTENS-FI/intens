@@ -86,7 +86,7 @@ Comment: This is a Multimarkdown document.
 - Dynamic provisioning of persistent volumes seems to work without any
   particular configuration.  Just use the default storage class. 
 - You should now be able to deploy Simsvc instances with `helm install
-  name charts/simsvc`.  See `charts/simsvc/values.yaml` for
+  name helm/simsvc`.  See `helm/simsvc/values.yaml` for
   parameters.  The release name is also the leading path component of
   service URLs.  Remember to use image stream names for pulling from
   the integrated registry.

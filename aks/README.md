@@ -80,7 +80,7 @@ Comment: This is a Multimarkdown document.
   `//<account>.file.core.windows.net/<volume>`, but I haven't actually
   managed to mount them.  They can be browsed via the portal though.
 - You should now be able to deploy Simsvc instances with `helm install
-  -n name charts/simsvc`.  See `charts/simsvc/values.xml` for
+  -n name helm/simsvc`.  See `helm/simsvc/values.xml` for
   parameters.  The release name is also the leading path component of
   URLs to the service (the host is the ingress service set up above).
 - Use `helm delete --purge` to take down instances if you want to reuse
@@ -108,7 +108,7 @@ Comment: This is a Multimarkdown document.
   worked for Linux.
 - DNS is currently broken on the ACI pods.  See `az-vk-values.yaml`
   for a fix.  The file contains values for our chart, e.g., `helm
-  install -n mpt -f aks/az-vk-values.yaml charts/simsvc`.  That
+  install -n mpt -f aks/az-vk-values.yaml helm/simsvc`.  That
   deploys the workers and the scheduler to ACI via VK.
 - Unfortunately persistent volumes appear completely unsupported by
   VK.  `kubectl logs` also works funny.  Therefore we keep the web
