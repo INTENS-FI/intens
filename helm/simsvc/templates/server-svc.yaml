@@ -3,10 +3,13 @@ kind: Service
 metadata:
   name: {{ template "simsvc.fullname" . }}-server
 spec:
+  {{- with .Values.server.serviceSpec }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}  
   selector:
     app: {{ template "simsvc.name" . }}
     release: {{ .Release.Name | quote }}
     component: server
   ports:
-    - name: {{ template "simsvc.fullname" . }}-server
+    - name: simsvc
       port: 8080

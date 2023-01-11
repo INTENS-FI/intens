@@ -5,13 +5,17 @@ openShift: true
 image:
   repository: simsvc-mpt
   tag: latest
-  # pullPolicy: IfNotPresent
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
+  # pullPolicy: Always
 
 server:
   replicas: 1
   # host name for ingress or route.  If empty no ingress or route is defined.
   host: intens.rahtiapp.fi
+  # serviceSpec is additional spec for the web service, e.g., type.
+  # selector and ports come from the template; anything else can be
+  # put here.
+  serviceSpec: {}
   # whitelist of allowed IP addresses, empty for all.  Only used on OpenShift.
   whitelist: ""
   # clusterIssuer for cert-manager.  Not used on OpenShift.

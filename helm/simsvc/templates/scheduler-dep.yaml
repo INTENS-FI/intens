@@ -27,8 +27,10 @@ spec:
           args:
             - dask-scheduler
           ports:
-            - containerPort: 8786
-            - containerPort: 8787
+            - name: scheduler
+              containerPort: 8786
+            - name: web-ui
+              containerPort: 8787
           tty: true
           # resources:
           #   requests:

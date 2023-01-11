@@ -8,7 +8,7 @@ spec:
     release: {{ .Release.Name | quote }}
     component: scheduler
   ports:
-    - name: {{ template "simsvc.fullname" . }}-scheduler
+    - name: scheduler
       port: 8786
-    - name: {{ template "simsvc.fullname" . }}-webui
+    - name: web-ui
       port: 8787
