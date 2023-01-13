@@ -48,6 +48,9 @@ spec:
             - name: HTPASSWD_FILE
               value: "/htpasswd/auth"
             {{- end }}
+            {{- with .Values.db.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           volumeMounts:
             {{- if .Values.work.storageClass }}
             - mountPath: "/work"

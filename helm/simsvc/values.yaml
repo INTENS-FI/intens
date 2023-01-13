@@ -21,6 +21,8 @@ server:
   # clusterIssuer for cert-manager.  Not used on OpenShift.
   clusterIssuer: intens-issuer
   pwsecret: intens-pw
+  # env variables appended to the pod template
+  env: []
   # spec items appended to the pod template
   spec: {}
 
@@ -34,6 +36,8 @@ worker:
   threads: 0
   # resources (requests & limits) for the container
   resources: {}
+  # env vars appended to the pod template
+  env: []
   # spec items appended to the pod template
   spec: {}
 
