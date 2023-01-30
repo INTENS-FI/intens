@@ -11,7 +11,7 @@ spec:
   host: {{ .Values.server.host }}
   path: /{{ .Release.Name }}/
   port:
-    targetPort: {{ template "simsvc.fullname" . }}-server
+    targetPort: simsvc
   tls:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect

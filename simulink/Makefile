@@ -30,6 +30,7 @@ CLEANFILES = % %.zip %.fmu
 
 .PHONY: all clean
 .SECONDARY: $(MODEL:%=%.zip)
+.DELETE_ON_ERROR:
 
 all: $(MODEL:%=%.fmu)
 
