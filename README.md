@@ -108,3 +108,19 @@ number of worker cores).
 [cityopt-gh]: https://github.com/Cityopt/cityopt "Cityopt on Github"
 [Cityopt]: http://www.cityopt.eu/
 [cityopt-csv]: https://github.com/Cityopt/cityopt/blob/master/misc/csv-formats.md
+
+## References
+
+Korvola, Timo, Mia Elg, Ossi Mettälä, Jari Lappalainen, Bogdan
+Molchanov, and Lien Tran. 2020. 'Taking Ship Energy Efficiency to a New
+Level with Cloud-Based Optimization'. In *Integrated Energy Solutions to
+Smart And Green Shipping*, 24--33.
+[https://doi.org/10.32040/2242-122X.2020.T380](
+    https://doi.org/10.32040/2242-122X.2020.T380).
+
+Elg, Mia, Timo Korvola, Bogdan Molchanov, Lien Tran, and Jari
+Lappalainen. 2022. 'Improving Ship Sustainability by Re-Using
+Engineering Simulators in Multi-Objective Optimization'. *International
+Journal of Maritime Engineering* 164 (A3): 327--42.
+[https://doi.org/10.5750/ijme.v164iA3.1164](
+    https://doi.org/10.5750/ijme.v164iA3.1164).
